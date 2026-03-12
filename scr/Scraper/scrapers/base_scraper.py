@@ -4,8 +4,14 @@ import duckdb
 import random
 from datetime import date
 from abc import ABC, abstractmethod
+
 from storage.local_storage import LocalStorage
 from storage.AWS_storage import AWSStorage
+from storage.category_storage import (
+    BaseCategoryStorage,
+    LocalCategoryStorage,
+    AWSCategoryStorage,
+)
 
 # --------------------------------------------------
 # BASE SCRAPER CLASS - Common functionality
@@ -26,6 +32,7 @@ class BaseScraper(ABC):
         storage=None,
         products_db: str = "products.duckdb",
         categories_db: str = "categories.duckdb",
+        category_storage: BaseCategoryStorage = None,
         storage_type: str = "local",
         aws_bucket: str = None,
         aws_prefix: str = "products",
@@ -37,6 +44,7 @@ class BaseScraper(ABC):
             storage: Optional storage backend instance. If passed as a string, it is treated as `products_db`.
             products_db: Path to local DuckDB products database (used when storage is local).
             categories_db: Path to categories database.
+            category_storage: Optional category storage backend to use.
             storage_type: "local" or "aws" (used when `storage` is not provided).
             aws_bucket: S3 bucket name (required when storage_type == "aws").
             aws_prefix: S3 prefix (folder) for AWS parquet files.
@@ -60,6 +68,20 @@ class BaseScraper(ABC):
         self.products_db = products_db
         self.categories_db = categories_db
         self.session = None
+
+        if category_storage is not None:
+            self.category_storage = category_storage
+        else:
+            if storage_type == "aws":
+                if not aws_bucket:
+                    raise ValueError("aws_bucket is required when storage_type='aws'")
+                self.category_storage = AWSCategoryStorage(
+                    db_path=self.categories_db,
+                    bucket=aws_bucket,
+                    prefix=aws_prefix,
+                )
+            else:
+                self.category_storage = LocalCategoryStorage(db_path=self.categories_db)
     
     # --------------------------------------------------
     # POLITE SLEEP (with jitter)
@@ -116,6 +138,10 @@ class BaseScraper(ABC):
         """Insert products via the configured storage backend."""
         self.storage.insert_products(products_data)
     
+    def _ensure_categories_db(self):
+        """Ensure the local category database is available (download if necessary)."""
+        self.category_storage.ensure_local_db()
+
     def get_paths(self, category_filter=None, start_from=None):
         """
         Get category paths from the database.
@@ -127,6 +153,8 @@ class BaseScraper(ABC):
         Returns:
             List of paths to scrape
         """
+        self._ensure_categories_db()
+
         conn = duckdb.connect(self.categories_db)
         cursor = conn.cursor()
         
