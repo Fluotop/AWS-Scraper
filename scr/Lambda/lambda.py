@@ -17,7 +17,8 @@ cd /home/ec2-user
 git clone https://github.com/myorg/scraper-repo.git >> $LOG_FILE 2>&1
 cd scraper-repo
 
-python3 scraper.py >> $LOG_FILE 2>&1
+python -m scrapers.category_manager >> $LOG_FILE 2>&1
+python run_all_scrapers.py >> $LOG_FILE 2>&1
 
 echo "Scraper finished" | tee -a $LOG_FILE
 
