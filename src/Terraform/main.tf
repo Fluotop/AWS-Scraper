@@ -1,9 +1,9 @@
 module "label" {
-  source = "./modules/label"
+  source      = "./modules/label"
   name        = "scraper"
   environment = "dev"
   project     = "scraper-project"
-  owner      = "Ben_TF"
+  owner       = "Ben_TF"
 }
 
 ########################################
@@ -50,9 +50,16 @@ resource "aws_iam_role_policy" "lambda_ec2_policy" {
   })
 }
 
+
 ########################################
 # Lambda function
 ########################################
+data "archive_file" "lambda_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/src/Lambda"
+  output_path = "${path.module}/lambda.zip"
+}
+
 
 resource "aws_lambda_function" "scraper_launcher" {
 
@@ -63,7 +70,7 @@ resource "aws_lambda_function" "scraper_launcher" {
   handler = "lambda_function.lambda_handler"
   runtime = var.lambda_runtime
 
-  filename = "lambda.zip"
+  filename = data.archive_file.lambda_zip.output_path
 
   environment {
     variables = {
@@ -72,7 +79,7 @@ resource "aws_lambda_function" "scraper_launcher" {
       LOG_LEVEL     = var.lambda_log_level
     }
   }
-  tags        = module.label.tags
+  tags = module.label.tags
 }
 
 ########################################
@@ -83,9 +90,9 @@ resource "aws_cloudwatch_event_rule" "daily_scraper" {
 
   name = "daily-scraper-trigger"
 
-  schedule_expression = "cron(0 0 8 ? * MON *)"
+  schedule_expression = "cron(0 13 ? * MON *)"
 
-  tags        = module.label.tags
+  tags = module.label.tags
 }
 
 ########################################
@@ -165,7 +172,7 @@ resource "aws_iam_role_policy" "ec2_terminate_policy" {
         ]
         Resource = "*"
       },
-            {
+      {
         Effect = "Allow"
         Action = [
           "ssm:GetParameter"
@@ -186,7 +193,7 @@ resource "aws_iam_instance_profile" "ec2_profile" {
   name = "scraper_ec2_profile"
 
   role = aws_iam_role.ec2_role.name
-  tags        = module.label.tags
+  tags = module.label.tags
 }
 
 ########################################
@@ -195,7 +202,7 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 resource "null_resource" "duckdb_export" {
 
   provisioner "local-exec" {
-    command = "python duckdb_to_s3.py"
+    command = "python3 duckdb_to_s3.py"
   }
 
   provisioner "local-exec" {

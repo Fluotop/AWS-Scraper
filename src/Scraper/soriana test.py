@@ -1,7 +1,6 @@
 import cloudscraper
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
-import unicodedata
 
 SITEMAP_URL = "https://www.soriana.com/sitemap_11-category.xml"
 STORE_SLUG = "soriana"

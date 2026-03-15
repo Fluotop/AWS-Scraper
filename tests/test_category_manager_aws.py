@@ -9,7 +9,7 @@ from moto import mock_aws
 
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from scr.Scraper.scrapers.category_manager import BaseCategoryManager
+from src.Scraper.scrapers.category_manager import BaseCategoryManager
 
 
 class DummyCategoryManager(BaseCategoryManager):
