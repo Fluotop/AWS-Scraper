@@ -10,13 +10,39 @@ USER_DATA_SCRIPT = """#!/bin/bash
 LOG_FILE="/home/ec2-user/scraper.log"
 BUCKET="BDM060897"
 
+echo "Starting download..." | tee -a $LOG_FILE
+
+set -e
+
+# install required packages
+dnf update -y
+dnf install -y git
+
+# create ssh directory
+mkdir -p /home/ec2-user/.ssh
+chmod 700 /home/ec2-user/.ssh
+
+# retrieve private key from Parameter Store
+aws ssm get-parameter \
+  --name "github_deploy_key" \
+  --with-decryption \
+  --query "Parameter.Value" \
+  --output text \
+  > /home/ec2-user/.ssh/id_ed25519
+
+# fix permissions
+chmod 600 /home/ec2-user/.ssh/id_ed25519
+chown ec2-user:ec2-user /home/ec2-user/.ssh/id_ed25519
+
+# add github to known hosts
+ssh-keyscan github.com >> /home/ec2-user/.ssh/known_hosts
+chown ec2-user:ec2-user /home/ec2-user/.ssh/known_hosts
+
+# clone repository
+sudo -u ec2-user git clone git@github.com:Fluotop/AWS-scraper.git /home/ec2-user/app
+cd /home/ec2-user/app
+
 echo "Starting scraper..." | tee -a $LOG_FILE
-
-cd /home/ec2-user
-
-git clone https://github.com/myorg/scraper-repo.git >> $LOG_FILE 2>&1
-cd scraper-repo
-
 python -m scrapers.category_manager >> $LOG_FILE 2>&1
 python run_all_scrapers.py >> $LOG_FILE 2>&1
 

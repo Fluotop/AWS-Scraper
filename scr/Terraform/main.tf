@@ -164,6 +164,13 @@ resource "aws_iam_role_policy" "ec2_terminate_policy" {
           "logs:PutLogEvents"
         ]
         Resource = "*"
+      },
+            {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter"
+        ]
+        Resource = "arn:aws:ssm:*:*:parameter/github_deploy_key"
       }
     ]
   })
