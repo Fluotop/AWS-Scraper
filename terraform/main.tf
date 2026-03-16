@@ -56,7 +56,7 @@ resource "aws_iam_role_policy" "lambda_ec2_policy" {
 ########################################
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_dir  = "${path.module}/src/Lambda"
+  source_dir  = "${path.module}/lambda"
   output_path = "${path.module}/lambda.zip"
 }
 
@@ -194,19 +194,4 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 
   role = aws_iam_role.ec2_role.name
   tags = module.label.tags
-}
-
-########################################
-# Python scripts
-########################################
-resource "null_resource" "duckdb_export" {
-
-  provisioner "local-exec" {
-    command = "python3 duckdb_to_s3.py"
-  }
-
-  provisioner "local-exec" {
-    when    = destroy
-    command = "aws s3 rm s3://BDM060897/Products/ --recursive"
-  }
 }
