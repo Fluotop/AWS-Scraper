@@ -73,7 +73,7 @@ resource "aws_lambda_function" "scraper_launcher" {
 
   filename = data.archive_file.lambda_zip.output_path
   source_code_hash = filebase64sha256("lambda.zip")
-  
+
   environment {
     variables = {
       AMI_ID        = var.ami_id
@@ -186,7 +186,7 @@ resource "aws_iam_role_policy" "ec2_terminate_policy" {
         Action = [
           "s3:putObject"
         ]
-        Resource = "arn:aws:s3:::BDM060897-prod/*"
+        Resource = "arn:aws:s3:::bdm060897-prod/*"
       }
     ]
   })

@@ -12,7 +12,7 @@ set -x
 exec > >(tee /home/ec2-user/full-debug.log) 2>&1
 
 LOG_FILE="/home/ec2-user/scraper.log"
-BUCKET="BDM060897-prod"
+BUCKET="bdm060897-prod"
 
 echo "Starting download..." | tee -a $LOG_FILE
 
@@ -45,18 +45,35 @@ chown ec2-user:ec2-user /home/ec2-user/.ssh/known_hosts
 # clone repository
 sudo -u ec2-user git clone git@github.com:Fluotop/AWS-scraper.git /home/ec2-user/app
 cd /home/ec2-user/app/src/
-pip3 install -r requirements.txt
+python3 -m pip install -r requirements.txt
 
-cd /home/ec2-user/app/src/scraper/
+
 echo "Starting category scraper..." | tee -a $LOG_FILE
-python -m scrapers.category_manager >> $LOG_FILE 2>&1
+
+set +e  # allow errors
+cd /home/ec2-user/app/src
+
+echo "Starting category scraper..." | tee -a $LOG_FILE
+python3 -m scraper.scrapers.category_manager >> $LOG_FILE 2>&1
+
 echo "Starting scraper..." | tee -a $LOG_FILE
-python run_all_scrapers.py >> $LOG_FILE 2>&1
+python3 -m scraper.run_all_scrapers >> $LOG_FILE 2>&1
+SCRAPER_EXIT=$?
+
+set -e  # turn strict mode back on
 
 echo "Scraper finished" | tee -a $LOG_FILE
 
-INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
-REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/region)
+TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" \
+  -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+
+INSTANCE_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" \
+  -s http://169.254.169.254/latest/meta-data/instance-id)
+
+AZ=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" \
+  -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
+
+REGION=${AZ::-1}
 
 echo "Uploading logs to S3..." | tee -a $LOG_FILE
 
