@@ -1,0 +1,6 @@
+requests
+duckdb
+boto3
+polars
+cloudscraper
+beautifulsoup4

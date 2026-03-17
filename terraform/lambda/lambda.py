@@ -7,13 +7,17 @@ AMI_ID = os.environ["AMI_ID"]
 INSTANCE_TYPE = os.environ["INSTANCE_TYPE"]
 
 USER_DATA_SCRIPT = """#!/bin/bash
+set -e
+set -x
+exec > >(tee /home/ec2-user/full-debug.log) 2>&1
+
 LOG_FILE="/home/ec2-user/scraper.log"
-BUCKET="BDM060897"
+BUCKET="BDM060897-prod"
 
 echo "Starting download..." | tee -a $LOG_FILE
 
 set -e
-
+ 
 # install required packages
 dnf update -y
 dnf install -y git
@@ -43,8 +47,8 @@ sudo -u ec2-user git clone git@github.com:Fluotop/AWS-scraper.git /home/ec2-user
 cd /home/ec2-user/app
 
 echo "Starting scraper..." | tee -a $LOG_FILE
-python -m scrapers.category_manager >> $LOG_FILE 2>&1
-python run_all_scrapers.py >> $LOG_FILE 2>&1
+python3 -m scrapers.category_manager >> $LOG_FILE 2>&1
+python3 run_all_scrapers.py >> $LOG_FILE 2>&1
 
 echo "Scraper finished" | tee -a $LOG_FILE
 
@@ -75,7 +79,7 @@ def lambda_handler(event, context):
             "ResourceType": "instance",
             "Tags": [
                 {"Key": "Name", "Value": "scraper-instance",
-                 "Project": "Scraper_Project"},
+                 "Key": "project", "Value": "scraper-project"},
             ]
         }
     ]

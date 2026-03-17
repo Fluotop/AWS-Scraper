@@ -42,7 +42,8 @@ resource "aws_iam_role_policy" "lambda_ec2_policy" {
         Action = [
           "ec2:RunInstances",
           "ec2:DescribeInstances",
-          "iam:PassRole"
+          "iam:PassRole",
+          "ec2:CreateTags"
         ]
         Resource = "*"
       }
@@ -67,11 +68,12 @@ resource "aws_lambda_function" "scraper_launcher" {
 
   role = aws_iam_role.lambda_role.arn
 
-  handler = "lambda_function.lambda_handler"
+  handler = "lambda.lambda_handler"
   runtime = var.lambda_runtime
 
   filename = data.archive_file.lambda_zip.output_path
-
+  source_code_hash = filebase64sha256("lambda.zip")
+  
   environment {
     variables = {
       AMI_ID        = var.ami_id
@@ -178,6 +180,13 @@ resource "aws_iam_role_policy" "ec2_terminate_policy" {
           "ssm:GetParameter"
         ]
         Resource = "arn:aws:ssm:*:*:parameter/github_deploy_key"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:putObject"
+        ]
+        Resource = "arn:aws:s3:::BDM060897-prod/*"
       }
     ]
   })
