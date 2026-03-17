@@ -20,7 +20,7 @@ set -e
  
 # install required packages
 dnf update -y
-dnf install -y git
+dnf install -y git python3 python3-pip
 
 # create ssh directory
 mkdir -p /home/ec2-user/.ssh
@@ -44,11 +44,14 @@ chown ec2-user:ec2-user /home/ec2-user/.ssh/known_hosts
 
 # clone repository
 sudo -u ec2-user git clone git@github.com:Fluotop/AWS-scraper.git /home/ec2-user/app
-cd /home/ec2-user/app
+cd /home/ec2-user/app/src/
+pip3 install -r requirements.txt
 
+cd /home/ec2-user/app/src/scraper/
+echo "Starting category scraper..." | tee -a $LOG_FILE
+python -m scrapers.category_manager >> $LOG_FILE 2>&1
 echo "Starting scraper..." | tee -a $LOG_FILE
-python3 -m scrapers.category_manager >> $LOG_FILE 2>&1
-python3 run_all_scrapers.py >> $LOG_FILE 2>&1
+python run_all_scrapers.py >> $LOG_FILE 2>&1
 
 echo "Scraper finished" | tee -a $LOG_FILE
 
