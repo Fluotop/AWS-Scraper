@@ -53,13 +53,13 @@ python3 -m pip install -r requirements.txt
 echo "Starting category scraper..." | tee -a $LOG_FILE
 
 set +e  # allow errors
-cd /home/ec2-user/app/src
+cd /home/ec2-user/app
 
 echo "Starting category scraper..." | tee -a $LOG_FILE
-python3 -m scraper.scrapers.category_manager >> $LOG_FILE 2>&1
+python3 -m category_manager >> $LOG_FILE 2>&1
 
 echo "Starting scraper..." | tee -a $LOG_FILE
-python3 -m scraper.run_all_scrapers >> $LOG_FILE 2>&1
+python3 -m run_all_scrapers >> $LOG_FILE 2>&1
 SCRAPER_EXIT=$?
 
 set -e  # turn strict mode back on

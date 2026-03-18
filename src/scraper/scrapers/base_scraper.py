@@ -7,7 +7,6 @@ from scraper.storage.local_storage import LocalStorage
 from scraper.storage.AWS_storage import AWSStorage
 from scraper.storage.category_storage import (
     BaseCategoryStorage,
-    LocalCategoryStorage,
     AWSCategoryStorage,
 )
 
@@ -135,10 +134,6 @@ class BaseScraper(ABC):
     def insert_products(self, products_data: list):
         """Insert products via the configured storage backend."""
         self.storage.insert_products(products_data)
-    
-    def _ensure_categories_db(self):
-        """Ensure the local category database is available (download if necessary)."""
-        self.category_storage.ensure_local_db()
 
     def get_paths(self, category_filter=None, start_from=None):
         """
@@ -151,7 +146,6 @@ class BaseScraper(ABC):
         Returns:
             List of paths to scrape
         """
-        self._ensure_categories_db()
 
         conn = duckdb.connect(self.categories_db)
         cursor = conn.cursor()

@@ -5,9 +5,8 @@ import duckdb
 from datetime import datetime, timedelta
 from abc import ABC, abstractmethod
 
-from ..storage.category_storage import (
+from scraper.storage.category_storage import (
     BaseCategoryStorage,
-    LocalCategoryStorage,
     AWSCategoryStorage,
 )
 
@@ -32,10 +31,9 @@ class BaseCategoryManager(ABC):
         base_url: str,
         api_endpoint: str,
         categories_db: str = "categories.duckdb",
-        category_storage: BaseCategoryStorage = None,
         storage_type: str = "local",
         aws_bucket: str = None,
-        aws_prefix: str = "categories",
+        aws_prefix: str = None,
     ):
         """Initialize the category manager.
         
@@ -44,7 +42,6 @@ class BaseCategoryManager(ABC):
             base_url: Base URL for the store
             api_endpoint: API endpoint for fetching categories
             categories_db: Path to categories database
-            category_storage: Optional category storage backend to use
             storage_type: "local" or "aws" (where to store category DB)
             aws_bucket: S3 bucket name (required when storage_type == "aws")
             aws_prefix: Prefix/folder to store category DB in S3
@@ -55,19 +52,15 @@ class BaseCategoryManager(ABC):
         self.categories_db = categories_db
         self.session = None
 
-        if category_storage is not None:
-            self.category_storage = category_storage
-        else:
-            if storage_type == "aws":
-                if not aws_bucket:
-                    raise ValueError("aws_bucket is required when storage_type='aws'")
-                self.category_storage = AWSCategoryStorage(
-                    db_path=self.categories_db,
-                    bucket=aws_bucket,
-                    prefix=aws_prefix,
-                )
-            else:
-                self.category_storage = LocalCategoryStorage(db_path=self.categories_db)
+
+        if storage_type == "aws":
+            if not aws_bucket:
+                raise ValueError("aws_bucket is required when storage_type='aws'")
+            self.category_storage = AWSCategoryStorage(
+                db_path=self.categories_db,
+                bucket=aws_bucket,
+                prefix=aws_prefix,
+            )
     
     @abstractmethod
     def create_session(self):

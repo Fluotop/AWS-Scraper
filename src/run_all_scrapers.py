@@ -7,8 +7,8 @@ To switch between local DuckDB storage and AWS S3 storage, edit the configuratio
 
 import threading
 
-from src.scraper.scrapers.chedraui_scraper_new import ChedrauiScraper
-from src.scraper.scrapers.superaki_scraper_new import SuperakiScraper
+from scraper.scrapers.chedraui_scraper_new import ChedrauiScraper
+from scraper.scrapers.superaki_scraper_new import SuperakiScraper
 
 # ---------------------------------------------------------------------------
 # CONFIGURATION - edit these values to switch storage / resume from a category
