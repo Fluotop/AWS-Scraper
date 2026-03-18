@@ -31,9 +31,9 @@ class BaseScraper(ABC):
         products_db: str = "products.duckdb",
         categories_db: str = "categories.duckdb",
         category_storage: BaseCategoryStorage = None,
-        storage_type: str = "local",
-        aws_bucket: str = None,
-        aws_prefix: str = "products",
+        storage_type: str = "aws",
+        aws_bucket: str = "bdm060897-prod",
+        aws_prefix: str = "scraper/products",
     ):
         """Initialize the scraper.
 
