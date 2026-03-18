@@ -2,7 +2,7 @@ import requests
 import json
 import base64
 from datetime import date
-from scrapers.base_scraper import BaseScraper
+from scraper.scrapers.base_scraper import BaseScraper
 
 # --------------------------------------------------
 # CHEDRAUI SCRAPER CLASS

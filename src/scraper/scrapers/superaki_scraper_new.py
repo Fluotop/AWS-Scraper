@@ -1,7 +1,7 @@
 import requests
 import json
 from datetime import date, datetime, timedelta
-from scrapers.base_scraper import BaseScraper
+from scraper.scrapers.base_scraper import BaseScraper
 
 # --------------------------------------------------
 # SUPERAKI SCRAPER CLASS
