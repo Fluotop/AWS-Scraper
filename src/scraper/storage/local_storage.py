@@ -1,5 +1,5 @@
 import duckdb
-from storage.base_storage import BaseStorage
+from scraper.storage.base_storage import BaseStorage
 
 
 class LocalStorage(BaseStorage):

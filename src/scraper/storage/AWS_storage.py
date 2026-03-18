@@ -1,6 +1,6 @@
 import polars as pl
 import boto3
-from .base_storage import BaseStorage
+from scraper.storage.base_storage import BaseStorage
 from datetime import date
 import io
 

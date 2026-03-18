@@ -20,7 +20,7 @@ set -e
  
 # install required packages
 dnf update -y
-dnf install -y git python3 python3-pip
+dnf install -y git python3.11 python3-pip
 
 # create ssh directory
 mkdir -p /home/ec2-user/.ssh
