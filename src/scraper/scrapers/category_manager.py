@@ -15,9 +15,9 @@ from ..storage.category_storage import (
 # ---------------------------------------------------------------------------
 # CONFIGURATION - edit these values to switch storage between local and AWS
 # ---------------------------------------------------------------------------
-STORAGE_TYPE = "local"  # "local" or "aws"
+STORAGE_TYPE = "aws"  # "local" or "aws"
 CATEGORIES_DB = "categories.duckdb"
-AWS_BUCKET = "BDM060897"  # required when STORAGE_TYPE == "aws"
+AWS_BUCKET = "bdm060897-prod"  # required when STORAGE_TYPE == "aws"
 AWS_PREFIX = "categories"
 
 # --------------------------------------------------

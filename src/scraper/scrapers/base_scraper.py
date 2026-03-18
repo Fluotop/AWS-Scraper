@@ -1,13 +1,11 @@
-import requests
 import time
 import duckdb
 import random
-from datetime import date
 from abc import ABC, abstractmethod
 
-from storage.local_storage import LocalStorage
-from storage.AWS_storage import AWSStorage
-from storage.category_storage import (
+from scraper.storage.local_storage import LocalStorage
+from scraper.storage.AWS_storage import AWSStorage
+from scraper.storage.category_storage import (
     BaseCategoryStorage,
     LocalCategoryStorage,
     AWSCategoryStorage,

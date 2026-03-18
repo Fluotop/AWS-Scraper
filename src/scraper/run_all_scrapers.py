@@ -13,10 +13,10 @@ from scraper.scrapers.superaki_scraper_new import SuperakiScraper
 # ---------------------------------------------------------------------------
 # CONFIGURATION - edit these values to switch storage / resume from a category
 # ---------------------------------------------------------------------------
-STORAGE_TYPE = "local"  # "local" or "aws"
+STORAGE_TYPE = "aws"  # "local" or "aws"
 PRODUCTS_DB = "products.duckdb"  # used when STORAGE_TYPE == "local"
 CATEGORIES_DB = "categories.duckdb"
-AWS_BUCKET = ""  # required when STORAGE_TYPE == "aws"
+AWS_BUCKET = "bdm060897-prod"  # required when STORAGE_TYPE == "aws"
 AWS_PREFIX = "products"  # prefix/key prefix for parquet files
 
 # Per-scraper resume & category filters (scraper-specific)
