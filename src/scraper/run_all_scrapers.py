@@ -16,8 +16,8 @@ from scraper.scrapers.superaki_scraper_new import SuperakiScraper
 STORAGE_TYPE = "aws"  # "local" or "aws"
 PRODUCTS_DB = "products.duckdb"  # used when STORAGE_TYPE == "local"
 CATEGORIES_DB = "categories.duckdb"
-AWS_BUCKET = "bdm060897-prod/scraper"  # required when STORAGE_TYPE == "aws"
-AWS_PREFIX = "products"  # prefix/key prefix for parquet files
+AWS_BUCKET = "bdm060897-prod"  # required when STORAGE_TYPE == "aws"
+AWS_PREFIX = "scraper/products"  # prefix/key prefix for parquet files
 
 # Per-scraper resume & category filters (scraper-specific)
 # Each scraper can have its own `start_from` path and `category_filter`.

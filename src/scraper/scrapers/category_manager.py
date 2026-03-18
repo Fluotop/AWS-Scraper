@@ -17,8 +17,8 @@ from ..storage.category_storage import (
 # ---------------------------------------------------------------------------
 STORAGE_TYPE = "aws"  # "local" or "aws"
 CATEGORIES_DB = "categories.duckdb"
-AWS_BUCKET = "bdm060897-prod/scraper"  # required when STORAGE_TYPE == "aws"
-AWS_PREFIX = "categories"
+AWS_BUCKET = "bdm060897-prod"  # required when STORAGE_TYPE == "aws"
+AWS_PREFIX = "scraper/categories"
 
 # --------------------------------------------------
 # BASE CATEGORY MANAGER CLASS

@@ -21,6 +21,8 @@ set -e
 # install required packages
 dnf update -y
 dnf install -y git python3.11 python3-pip
+python3.11 -m venv venv
+source venv/bin/activate
 
 # create ssh directory
 mkdir -p /home/ec2-user/.ssh
