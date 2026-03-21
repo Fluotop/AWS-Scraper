@@ -24,7 +24,7 @@ class LocalStorage(BaseStorage):
             catid TEXT,
             image TEXT,
             price DOUBLE,
-            priceWihoutDiscount DOUBLE,
+            priceWithoutDiscount DOUBLE,
             list_price DOUBLE,
             is_available BOOLEAN,
             link TEXT,
@@ -44,7 +44,7 @@ class LocalStorage(BaseStorage):
         conn.executemany("""
         INSERT OR REPLACE INTO products
         (product_id, store, scrape_date, name, brand, maincat,
-         cat, subcat, catid, image, price, priceWihoutDiscount,
+         cat, subcat, catid, image, price, priceWithoutDiscount,
          list_price, is_available, link)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, products_data)

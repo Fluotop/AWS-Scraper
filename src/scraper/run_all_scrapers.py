@@ -13,7 +13,7 @@ from src.scraper.scrapers.superaki_scraper_new import SuperakiScraper
 # ---------------------------------------------------------------------------
 # CONFIGURATION - edit these values to switch storage / resume from a category
 # ---------------------------------------------------------------------------
-STORAGE_TYPE = "aws"  # "local" or "aws"
+STORAGE_TYPE = "local"  # "local" or "aws"
 PRODUCTS_DB = "products.duckdb"  # used when STORAGE_TYPE == "local"
 CATEGORIES_DB = "categories.duckdb"
 AWS_BUCKET = "bdm060897-prod"  # required when STORAGE_TYPE == "aws"

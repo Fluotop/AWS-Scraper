@@ -25,7 +25,7 @@ class AWSStorage(BaseStorage):
         columns = [
             "product_id", "store", "scrape_date", "name", "brand",
             "maincat", "cat", "subcat", "catid",
-            "image", "price", "priceWihoutDiscount",
+            "image", "price", "priceWithoutDiscount",
             "list_price", "is_available", "link"
         ]
 

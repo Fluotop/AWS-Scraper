@@ -8,7 +8,7 @@ TABLE = "products"
 
 LOCAL_EXPORT = "export"
 BUCKET = "bdm060897-prod"
-PREFIX = "Products"
+PREFIX = "scraper/products"
 
 # clean export folder
 if os.path.exists(LOCAL_EXPORT):

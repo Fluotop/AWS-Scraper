@@ -77,8 +77,6 @@ class BaseScraper(ABC):
                     bucket=aws_bucket,
                     prefix=aws_prefix,
                 )
-            else:
-                self.category_storage = LocalCategoryStorage(db_path=self.categories_db)
     
     # --------------------------------------------------
     # POLITE SLEEP (with jitter)
