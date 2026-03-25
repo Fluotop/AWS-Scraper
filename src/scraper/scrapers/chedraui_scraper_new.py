@@ -1,8 +1,7 @@
 import requests
-import json
-import base64
 from datetime import date
 from scraper.scrapers.base_scraper import BaseScraper
+from playwright.sync_api import sync_playwright
 
 # --------------------------------------------------
 # CHEDRAUI SCRAPER CLASS
@@ -44,39 +43,25 @@ class ChedrauiScraper(BaseScraper):
     # CREATE SESSION FOR CHEDRAUI
     # --------------------------------------------------
     def create_session(self):
-        """Create and configure a requests session for Chedraui."""
-        self.session = requests.Session()
-        
-        segment_dict = {
-            "campaigns": None,
-            "channel": "1",
-            "priceTables": None,
-            "regionId": "U1cjY2hlZHJhdWlteDAyNzQ=",
-            "utm_campaign": None,
-            "utm_source": None,
-            "utmi_campaign": None,
-            "currencyCode": "MXN",
-            "currencySymbol": "$",
-            "countryCode": "MEX",
-            "cultureInfo": "es-MX",
-            "channelPrivacy": "public",
-            "facets": "country=MEX;coordinates=-86.86575,21.09761;"
-        }
-        
-        segment_encoded = base64.b64encode(
-            json.dumps(segment_dict, separators=(",", ":")).encode()
-        ).decode()
-        
-        self.session.cookies.set(
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            context = browser.new_context()
+            page = context.new_page()
+            page.goto("https://www.chedraui.com.mx", timeout=60000, wait_until="domcontentloaded")
+            page.wait_for_timeout(3000)
+            cookies = {c["name"]: c["value"] for c in context.cookies()}
+            browser.close()
+
+        session = requests.Session()
+        session.cookies.set("vtex_session", cookies["vtex_session"], domain=".chedraui.com.mx")
+        session.cookies.set(
             "vtex_segment",
-            segment_encoded,
-            domain="www.chedraui.com.mx"
+            "eyJjYW1wYWlnbnMiOm51bGwsImNoYW5uZWwiOiIxIiwicHJpY2VUYWJsZXMiOm51bGwsInJlZ2lvbklkIjoiVTFjalkyaGxaSEpoZFdsdGVEQXlOVFU9IiwidXRtX2NhbXBhaWduIjpudWxsLCJ1dG1fc291cmNlIjpudWxsLCJ1dG1pX2NhbXBhaWduIjpudWxsLCJjdXJyZW5jeUNvZGUiOiJNWE4iLCJjdXJyZW5jeVN5bWJvbCI6IiQiLCJjb3VudHJ5Q29kZSI6Ik1FWCIsImN1bHR1cmVJbmZvIjoiZXMtTVgiLCJjaGFubmVsUHJpdmFjeSI6InB1YmxpYyIsImZhY2V0cyI6ImNvdW50cnk9TUVYO2Nvb3JkaW5hdGVzPS04Ni44NDA5MSwyMS4xNTM1MTsifQ",
+            domain=".chedraui.com.mx"
         )
-        
-        headers = {"User-Agent": "Mozilla/5.0"}
-        
-        # Generate fresh VTEX session
-        self.session.get("https://www.chedraui.com.mx/", headers=headers)
+
+        self.session = session
+        return session
     
     # --------------------------------------------------
     # SCRAPE ONE CATEGORY

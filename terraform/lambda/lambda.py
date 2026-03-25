@@ -53,7 +53,7 @@ python3 -m pip install -r requirements.txt
 echo "Starting category scraper..." | tee -a $LOG_FILE
 
 set +e  # allow errors
-cd /home/ec2-user/app
+cd /home/ec2-user/app/src
 
 echo "Starting category scraper..." | tee -a $LOG_FILE
 python3 -m category_manager >> $LOG_FILE 2>&1
@@ -80,7 +80,7 @@ REGION=${AZ::-1}
 echo "Uploading logs to S3..." | tee -a $LOG_FILE
 
 aws s3 cp $LOG_FILE s3://$BUCKET/logs/scraper.log --region $REGION
-
+aws s3 cp /dev/null s3://bdm060897-prod/scraper/products/_SUCCESS --region $REGION
 aws ec2 terminate-instances --instance-ids $INSTANCE_ID --region $REGION
 """
 
@@ -97,12 +97,12 @@ def lambda_handler(event, context):
         UserData=base64.b64encode(USER_DATA_SCRIPT.encode()).decode(),
         
         TagSpecifications=[
-        {
-            "ResourceType": "instance",
-            "Tags": [
-                {"Key": "Name", "Value": "scraper-instance",
-                 "Key": "project", "Value": "scraper-project"},
-            ]
-        }
-    ]
+            {
+                "ResourceType": "instance",
+                "Tags": [
+                    {"Key": "Name", "Value": "scraper-instance"},
+                    {"Key": "project", "Value": "scraper-project"}
+                ]
+            }
+        ]
     )
