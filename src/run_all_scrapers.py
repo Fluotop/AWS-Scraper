@@ -64,40 +64,23 @@ def _run_scraper(scraper, category_filter=None, start_from=None):
 
 
 def main():
-    if STORAGE_TYPE == "aws" and not AWS_BUCKET:
-        raise ValueError("AWS_BUCKET must be set when STORAGE_TYPE is 'aws'.")
+    scraper_configs = _make_scrapers()
 
-    chedraui_scraper = ChedrauiScraper(
-        storage_type=STORAGE_TYPE,
-        products_db=PRODUCTS_DB,
-        categories_db=CATEGORIES_DB,
-        aws_bucket=AWS_BUCKET,
-        aws_prefix=AWS_PREFIX,
-    )
+    threads = []
+    for cfg in scraper_configs:
+        t = threading.Thread(
+            target=_run_scraper,
+            args=(
+                cfg["scraper"],
+                cfg.get("category_filter"),
+                cfg.get("start_from"),
+            ),
+        )
+        t.start()
+        threads.append(t)
 
-    chedraui_scraper.run(
-        category_filter=CHEDRAUI_CATEGORY_FILTER,
-        start_from=CHEDRAUI_START_FROM,
-    )
-
-    # Old threaded flow kept for quick rollback:
-    # scraper_configs = _make_scrapers()
-    #
-    # threads = []
-    # for cfg in scraper_configs:
-    #     t = threading.Thread(
-    #         target=_run_scraper,
-    #         args=(
-    #             cfg["scraper"],
-    #             cfg.get("category_filter"),
-    #             cfg.get("start_from"),
-    #         ),
-    #     )
-    #     t.start()
-    #     threads.append(t)
-    #
-    # for t in threads:
-    #     t.join()
+    for t in threads:
+        t.join()
 
 
 if __name__ == "__main__":
