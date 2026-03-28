@@ -9,6 +9,11 @@ print("LOADING aws_STORAGE FROM:", __file__)
 
 class AWSStorage(BaseStorage):
 
+    STRING_COLUMNS = [
+        "product_id", "store", "name", "brand", "maincat", "cat",
+        "subcat", "catid", "image", "link"
+    ]
+
     def __init__(self, bucket, prefix="store_scraper"):
         self.bucket = bucket
         self.prefix = prefix
@@ -32,7 +37,8 @@ class AWSStorage(BaseStorage):
         df = pl.DataFrame(products_data, schema=columns, orient="row")
 
         df = df.with_columns(
-            pl.col("scrape_date").cast(pl.Date)
+            pl.col(self.STRING_COLUMNS).cast(pl.Utf8, strict=False),
+            pl.col("scrape_date").cast(pl.Date),
         )
 
         store = df["store"][0]
