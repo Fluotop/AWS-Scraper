@@ -63,12 +63,24 @@ def _run_scraper(scraper, category_filter=None, start_from=None):
     scraper.run(category_filter=category_filter, start_from=start_from)
 
 
+class ScraperThread(threading.Thread):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.error = None
+
+    def run(self):
+        try:
+            super().run()
+        except Exception as exc:
+            self.error = exc
+
+
 def main():
     scraper_configs = _make_scrapers()
 
     threads = []
     for cfg in scraper_configs:
-        t = threading.Thread(
+        t = ScraperThread(
             target=_run_scraper,
             args=(
                 cfg["scraper"],
@@ -81,6 +93,11 @@ def main():
 
     for t in threads:
         t.join()
+
+    failed_threads = [t for t in threads if t.error is not None]
+    if failed_threads:
+        errors = "; ".join(f"{t.name}: {t.error}" for t in failed_threads)
+        raise RuntimeError(f"One or more scraper threads failed: {errors}")
 
 
 if __name__ == "__main__":
