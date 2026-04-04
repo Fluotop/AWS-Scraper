@@ -385,12 +385,12 @@ resource "aws_iam_role_policy" "lambda_policy" {
       {
         Effect = "Allow"
         Action = [
-            "glue:GetDatabase",
-            "glue:GetDatabases",
-            "glue:GetTable",
-            "glue:GetTables",
-            "glue:GetPartition",
-            "glue:GetPartitions"
+          "glue:GetDatabase",
+          "glue:GetDatabases",
+          "glue:GetTable",
+          "glue:GetTables",
+          "glue:GetPartition",
+          "glue:GetPartitions"
         ]
         Resource = "*"
       }
@@ -459,7 +459,7 @@ resource "aws_cloudwatch_event_target" "target_step_function" {
   rule      = aws_cloudwatch_event_rule.s3_success.name
   target_id = "target-step-function"
   arn       = aws_sfn_state_machine.scraper_dashboard_state_machine.arn
-  role_arn = aws_iam_role.eventbridge_invoke_step_function_role.arn
+  role_arn  = aws_iam_role.eventbridge_invoke_step_function_role.arn
 }
 
 resource "aws_iam_role" "eventbridge_invoke_step_function_role" {
@@ -527,14 +527,14 @@ resource "aws_iam_role_policy" "scraper_dashboard_step_function_policy" {
         Effect = "Allow"
         Action = [
           "athena:StartQueryExecution",
-          "athena:GetQueryExecution",   
+          "athena:GetQueryExecution",
           "athena:GetQueryResults",
           "s3:GetBucketLocation",
           "s3:PutObject",
-          "s3:GetObject",                
-          "s3:ListBucket",              
+          "s3:GetObject",
+          "s3:ListBucket",
           "glue:GetDatabase",
-          "glue:GetDatabases",            
+          "glue:GetDatabases",
           "glue:GetTable",
           "glue:GetTables",
           "glue:GetPartition",
@@ -563,9 +563,9 @@ resource "aws_sfn_state_machine" "scraper_dashboard_state_machine" {
     StartAt = "lambda_prepare",
     States = {
       lambda_prepare = {
-        Type = "Task",
+        Type     = "Task",
         Resource = aws_lambda_function.athena_prepare_tables.arn,
-        Next = "run_queries_in_parallel"
+        Next     = "run_queries_in_parallel"
       },
       run_queries_in_parallel = {
         Type = "Parallel",
@@ -574,64 +574,64 @@ resource "aws_sfn_state_machine" "scraper_dashboard_state_machine" {
             StartAt = "list_price_increases",
             States = {
               list_price_increases = {
-                Type = "Task",
+                Type     = "Task",
                 Resource = "arn:aws:states:::athena:startQueryExecution.sync:2"
                 Parameters = {
-                  QueryString = file("${path.module}/lambda/sql/list_price_increases.sql")
-                  QueryExecutionContext = {Database = "products_db"}
-                  ResultConfiguration = {OutputLocation = "s3://bdm060897-prod/scraper/athena-results/list_price_increases/"}
+                  QueryString           = file("${path.module}/lambda/sql/list_price_increases.sql")
+                  QueryExecutionContext = { Database = "products_db" }
+                  ResultConfiguration   = { OutputLocation = "s3://bdm060897-prod/scraper/athena-results/list_price_increases/" }
                 }
                 End = true
               }
             }
           },
-          { 
-          StartAt = "list_price_decreases",
+          {
+            StartAt = "list_price_decreases",
             States = {
               list_price_decreases = {
-                Type = "Task",
+                Type     = "Task",
                 Resource = "arn:aws:states:::athena:startQueryExecution.sync:2"
                 Parameters = {
-                  QueryString = file("${path.module}/lambda/sql/list_price_decreases.sql")
-                  QueryExecutionContext = {Database = "products_db"}
-                  ResultConfiguration = {OutputLocation = "s3://bdm060897-prod/scraper/athena-results/list_price_decreases/"}
+                  QueryString           = file("${path.module}/lambda/sql/list_price_decreases.sql")
+                  QueryExecutionContext = { Database = "products_db" }
+                  ResultConfiguration   = { OutputLocation = "s3://bdm060897-prod/scraper/athena-results/list_price_decreases/" }
                 }
                 End = true
               }
             }
           },
-          { 
-          StartAt = "discounts",
+          {
+            StartAt = "discounts",
             States = {
               discounts = {
-                Type = "Task",
+                Type     = "Task",
                 Resource = "arn:aws:states:::athena:startQueryExecution.sync:2"
                 Parameters = {
-                  QueryString = file("${path.module}/lambda/sql/discounts.sql")
-                  QueryExecutionContext = {Database = "products_db"}
-                  ResultConfiguration = {OutputLocation = "s3://bdm060897-prod/scraper/athena-results/discounts/"}
+                  QueryString           = file("${path.module}/lambda/sql/discounts.sql")
+                  QueryExecutionContext = { Database = "products_db" }
+                  ResultConfiguration   = { OutputLocation = "s3://bdm060897-prod/scraper/athena-results/discounts/" }
                 }
                 End = true
               }
             }
           },
-          { 
-          StartAt = "avg_deals_30d",
+          {
+            StartAt = "avg_deals_30d",
             States = {
               avg_deals_30d = {
-                Type = "Task",
+                Type     = "Task",
                 Resource = "arn:aws:states:::athena:startQueryExecution.sync:2"
                 Parameters = {
-                  QueryString = file("${path.module}/lambda/sql/30d_avg_deals.sql")
-                  QueryExecutionContext = {Database = "products_db"}
-                  ResultConfiguration = {OutputLocation = "s3://bdm060897-prod/scraper/athena-results/thirtyd_avg_deals/"}
+                  QueryString           = file("${path.module}/lambda/sql/30d_avg_deals.sql")
+                  QueryExecutionContext = { Database = "products_db" }
+                  ResultConfiguration   = { OutputLocation = "s3://bdm060897-prod/scraper/athena-results/thirtyd_avg_deals/" }
                 }
                 End = true
               }
             }
           }
         ],
-      End = true
+        End = true
       }
     }
   })
