@@ -575,7 +575,7 @@ resource "aws_sfn_state_machine" "scraper_dashboard_state_machine" {
             States = {
               list_price_increases = {
                 Type     = "Task",
-                Resource = "arn:aws:states:::athena:startQueryExecution.sync:2"
+                Resource = "arn:aws:states:::athena:startQueryExecution.sync"
                 Parameters = {
                   QueryString           = file("${path.module}/lambda/sql/list_price_increases.sql")
                   QueryExecutionContext = { Database = "products_db" }
@@ -590,7 +590,7 @@ resource "aws_sfn_state_machine" "scraper_dashboard_state_machine" {
             States = {
               list_price_decreases = {
                 Type     = "Task",
-                Resource = "arn:aws:states:::athena:startQueryExecution.sync:2"
+                Resource = "arn:aws:states:::athena:startQueryExecution.sync"
                 Parameters = {
                   QueryString           = file("${path.module}/lambda/sql/list_price_decreases.sql")
                   QueryExecutionContext = { Database = "products_db" }
@@ -605,7 +605,7 @@ resource "aws_sfn_state_machine" "scraper_dashboard_state_machine" {
             States = {
               discounts = {
                 Type     = "Task",
-                Resource = "arn:aws:states:::athena:startQueryExecution.sync:2"
+                Resource = "arn:aws:states:::athena:startQueryExecution.sync"
                 Parameters = {
                   QueryString           = file("${path.module}/lambda/sql/discounts.sql")
                   QueryExecutionContext = { Database = "products_db" }
@@ -620,7 +620,7 @@ resource "aws_sfn_state_machine" "scraper_dashboard_state_machine" {
             States = {
               avg_deals_30d = {
                 Type     = "Task",
-                Resource = "arn:aws:states:::athena:startQueryExecution.sync:2"
+                Resource = "arn:aws:states:::athena:startQueryExecution.sync"
                 Parameters = {
                   QueryString           = file("${path.module}/lambda/sql/30d_avg_deals.sql")
                   QueryExecutionContext = { Database = "products_db" }
