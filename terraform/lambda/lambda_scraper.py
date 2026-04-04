@@ -49,6 +49,14 @@ sudo -u ec2-user git clone git@github.com:Fluotop/AWS-scraper.git /home/ec2-user
 cd /home/ec2-user/app/src/
 python3 -m pip install -r requirements.txt
 
+# install chromium system dependencies manually (Amazon Linux uses dnf, not apt-get)
+dnf install -y \
+  nss nspr atk at-spi2-atk cups-libs libXcomposite libXdamage libXext libXfixes \
+  libXrandr mesa-libgbm libxkbcommon pango alsa-lib dbus-libs cairo \
+  libdrm libX11 libXcursor libXi libXScrnSaver libXtst
+
+# install playwright browser (no --with-deps since we installed deps above)
+python3 -m playwright install chromium
 
 echo "Starting category scraper..." | tee -a $LOG_FILE
 
@@ -80,7 +88,13 @@ REGION=${AZ::-1}
 echo "Uploading logs to S3..." | tee -a $LOG_FILE
 
 aws s3 cp $LOG_FILE s3://$BUCKET/logs/scraper.log --region $REGION
-aws s3 cp /dev/null s3://bdm060897-prod/scraper/products/_SUCCESS --region $REGION
+
+if [ "$SCRAPER_EXIT" -eq 0 ]; then
+  aws s3api put-object --bucket bdm060897-prod --key scraper/products/_SUCCESS --region $REGION
+else
+  aws s3api put-object --bucket bdm060897-prod --key scraper/products/_FAILED --region $REGION
+fi
+
 aws ec2 terminate-instances --instance-ids $INSTANCE_ID --region $REGION
 """
 

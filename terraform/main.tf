@@ -59,10 +59,10 @@ resource "aws_iam_role_policy" "lambda_ec2_policy" {
 #-------------------------------
 # Lambda function
 #-------------------------------
-data "archive_file" "lambda_zip" {
+data "archive_file" "lambda_scraper_zip" {
   type        = "zip"
-  source_dir  = "${path.module}/lambda"
-  output_path = "${path.module}/lambda.zip"
+  source_file = "${path.module}/lambda/lambda_scraper.py"
+  output_path = "${path.module}/lambda_scraper.zip"
 }
 
 
@@ -72,11 +72,11 @@ resource "aws_lambda_function" "scraper_launcher" {
 
   role = aws_iam_role.lambda_role_scraper.arn
 
-  handler = "lambda.lambda_handler"
+  handler = "lambda_scraper.lambda_handler"
   runtime = var.lambda_runtime
 
-  filename = data.archive_file.lambda_zip.output_path
-  source_code_hash = filebase64sha256("lambda.zip")
+  filename         = data.archive_file.lambda_scraper_zip.output_path
+  source_code_hash = filebase64sha256(data.archive_file.lambda_scraper_zip.output_path)
 
   environment {
     variables = {
@@ -105,7 +105,7 @@ resource "aws_cloudwatch_event_rule" "daily_scraper" {
 # EventBridge Target (Lambda)
 #-------------------------------
 
-resource "aws_cloudwatch_event_target" "lambda_target" {
+resource "aws_cloudwatch_event_target" "lambda_target_scraper" {
 
   rule = aws_cloudwatch_event_rule.daily_scraper.name
 
@@ -119,7 +119,7 @@ resource "aws_cloudwatch_event_target" "lambda_target" {
 # Allow EventBridge to invoke Lambda
 #-------------------------------
 
-resource "aws_lambda_permission" "allow_eventbridge" {
+resource "aws_lambda_permission" "allow_eventbridge_scraper" {
 
   statement_id = "AllowExecutionFromEventBridge"
 
@@ -188,7 +188,7 @@ resource "aws_iam_role_policy" "ec2_terminate_policy" {
       {
         Effect = "Allow"
         Action = [
-          "s3:putObject"
+          "s3:PutObject"
         ]
         Resource = "arn:aws:s3:::bdm060897-prod/*"
       }
@@ -206,6 +206,14 @@ resource "aws_iam_instance_profile" "ec2_profile" {
   name = "scraper_ec2_profile"
 
   role = aws_iam_role.ec2_role.name
+
+
+  depends_on = [aws_iam_role.ec2_role]
+
+  lifecycle {
+    create_before_destroy = false
+  }
+
   tags = module.label.tags
 }
 
@@ -214,17 +222,11 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 #####################################
 
 # ----------------------------
-# S3 bucket for Athena results
-# ----------------------------
-resource "aws_s3_bucket" "athena_results" {
-  bucket = "bdm060897-prod"
-}
-
-# ----------------------------
 # Glue Catalog Database
 # ----------------------------
 resource "aws_glue_catalog_database" "products_db" {
   name = "products_db"
+  tags = module.label.tags
 }
 
 # ----------------------------
@@ -314,10 +316,9 @@ resource "aws_glue_catalog_table" "products" {
     }
   }
 
-  
   partition_keys {
     name = "scrape_date"
-    type = "string"
+    type = "date"
   }
 
   partition_keys {
@@ -343,6 +344,7 @@ resource "aws_iam_role" "lambda_role_athena" {
       }
     }]
   })
+  tags = module.label.tags
 }
 
 resource "aws_iam_role_policy" "lambda_policy" {
@@ -352,17 +354,16 @@ resource "aws_iam_role_policy" "lambda_policy" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-      # Athena permissions
       {
         Effect = "Allow"
         Action = [
           "athena:StartQueryExecution",
           "athena:GetQueryExecution",
-          "athena:GetQueryResults"
+          "athena:GetQueryResults",
+          "s3:GetBucketLocation"
         ]
         Resource = "*"
       },
-      # S3 access (data + results)
       {
         Effect = "Allow"
         Action = [
@@ -372,11 +373,24 @@ resource "aws_iam_role_policy" "lambda_policy" {
         ]
         Resource = "*"
       },
-      # Logs
       {
         Effect = "Allow"
         Action = [
-          "logs:*"
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+            "glue:GetDatabase",
+            "glue:GetDatabases",
+            "glue:GetTable",
+            "glue:GetTables",
+            "glue:GetPartition",
+            "glue:GetPartitions"
         ]
         Resource = "*"
       }
@@ -387,15 +401,20 @@ resource "aws_iam_role_policy" "lambda_policy" {
 # ----------------------------
 # Athena lambda function
 # ----------------------------
+data "archive_file" "lambda_prepare_zip" {
+  type        = "zip"
+  source_file = "${path.module}/lambda/lambda_prepare.py"
+  output_path = "${path.module}/lambda_prepare.zip"
+}
 
-resource "aws_lambda_function" "athena_runner" {
-  function_name = "athena-query-runner"
-  role          = aws_iam_role.lambda_role.arn
-  handler       = "index.handler"
+resource "aws_lambda_function" "athena_prepare_tables" {
+  function_name = "athena-prepare-tables"
+  role          = aws_iam_role.lambda_role_athena.arn
+  handler       = "lambda_prepare.lambda_handler"
   runtime       = "python3.11"
 
-  filename         = "lambda_athena.zip" # zip your code
-  source_code_hash = filebase64sha256("lambda_athena.zip")
+  filename         = data.archive_file.lambda_prepare_zip.output_path
+  source_code_hash = filebase64sha256(data.archive_file.lambda_prepare_zip.output_path)
 
   environment {
     variables = {
@@ -403,16 +422,24 @@ resource "aws_lambda_function" "athena_runner" {
       OUTPUT_LOCATION = "s3://bdm060897-prod/scraper/athena-results/"
     }
   }
+
+  tags = module.label.tags
 }
 
 # ----------------------------
 # s3 EventBridge rule
 # ----------------------------
+
+resource "aws_s3_bucket_notification" "bucket_notifications" {
+  bucket      = "bdm060897-prod"
+  eventbridge = true
+}
+
 resource "aws_cloudwatch_event_rule" "s3_success" {
-  name = "trigger-athena-on-scraper-success"
+  name = "trigger-step-function-on-scraper-success"
 
   event_pattern = jsonencode({
-    source = ["aws.s3"],
+    source      = ["aws.s3"],
     detail-type = ["Object Created"],
     detail = {
       bucket = {
@@ -425,18 +452,193 @@ resource "aws_cloudwatch_event_rule" "s3_success" {
       }
     }
   })
+  tags = module.label.tags
 }
 
-resource "aws_cloudwatch_event_target" "lambda_target" {
+resource "aws_cloudwatch_event_target" "target_step_function" {
   rule      = aws_cloudwatch_event_rule.s3_success.name
-  target_id = "athena-lambda"
-  arn       = aws_lambda_function.athena_runner.arn
+  target_id = "target-step-function"
+  arn       = aws_sfn_state_machine.scraper_dashboard_state_machine.arn
+  role_arn = aws_iam_role.eventbridge_invoke_step_function_role.arn
 }
 
-resource "aws_lambda_permission" "allow_eventbridge" {
-  statement_id  = "AllowExecutionFromEventBridge"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.athena_runner.function_name
-  principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.s3_success.arn
+resource "aws_iam_role" "eventbridge_invoke_step_function_role" {
+  name = "eventbridge-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "events.amazonaws.com"
+      }
+    }]
+  })
+  tags = module.label.tags
 }
+
+resource "aws_iam_role_policy" "eventbridge_policy" {
+  name = "eventbridge-policy"
+  role = aws_iam_role.eventbridge_invoke_step_function_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "states:StartExecution"
+        ]
+        Resource = aws_sfn_state_machine.scraper_dashboard_state_machine.arn
+      }
+    ]
+  })
+}
+
+# ----------------------------
+# Step Function
+# ----------------------------
+
+resource "aws_iam_role" "scraper_dashboard_step_function_role" {
+  name = "scraper-dashboard-step-function-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "states.amazonaws.com"
+      }
+    }]
+  })
+  tags = module.label.tags
+}
+
+resource "aws_iam_role_policy" "scraper_dashboard_step_function_policy" {
+  name = "scraper-dashboard-step-function-policy"
+  role = aws_iam_role.scraper_dashboard_step_function_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "athena:StartQueryExecution",
+          "athena:GetQueryExecution",   
+          "athena:GetQueryResults",
+          "s3:GetBucketLocation",
+          "s3:PutObject",
+          "s3:GetObject",                
+          "s3:ListBucket",              
+          "glue:GetDatabase",
+          "glue:GetDatabases",            
+          "glue:GetTable",
+          "glue:GetTables",
+          "glue:GetPartition",
+          "glue:GetPartitions"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "lambda:InvokeFunction"
+        ]
+        Resource = aws_lambda_function.athena_prepare_tables.arn
+      }
+    ]
+  })
+}
+
+
+resource "aws_sfn_state_machine" "scraper_dashboard_state_machine" {
+  name     = "scraper-dashboard-state-machine"
+  role_arn = aws_iam_role.scraper_dashboard_step_function_role.arn
+
+  definition = jsonencode({
+    Comment = "Prepare tables and output dashboard data",
+    StartAt = "lambda_prepare",
+    States = {
+      lambda_prepare = {
+        Type = "Task",
+        Resource = aws_lambda_function.athena_prepare_tables.arn,
+        Next = "run_queries_in_parallel"
+      },
+      run_queries_in_parallel = {
+        Type = "Parallel",
+        Branches = [
+          {
+            StartAt = "list_price_increases",
+            States = {
+              list_price_increases = {
+                Type = "Task",
+                Resource = "arn:aws:states:::athena:startQueryExecution.sync:2"
+                Parameters = {
+                  QueryString = file("${path.module}/lambda/sql/list_price_increases.sql")
+                  QueryExecutionContext = {Database = "products_db"}
+                  ResultConfiguration = {OutputLocation = "s3://bdm060897-prod/scraper/athena-results/list_price_increases/"}
+                }
+                End = true
+              }
+            }
+          },
+          { 
+          StartAt = "list_price_decreases",
+            States = {
+              list_price_decreases = {
+                Type = "Task",
+                Resource = "arn:aws:states:::athena:startQueryExecution.sync:2"
+                Parameters = {
+                  QueryString = file("${path.module}/lambda/sql/list_price_decreases.sql")
+                  QueryExecutionContext = {Database = "products_db"}
+                  ResultConfiguration = {OutputLocation = "s3://bdm060897-prod/scraper/athena-results/list_price_decreases/"}
+                }
+                End = true
+              }
+            }
+          },
+          { 
+          StartAt = "discounts",
+            States = {
+              discounts = {
+                Type = "Task",
+                Resource = "arn:aws:states:::athena:startQueryExecution.sync:2"
+                Parameters = {
+                  QueryString = file("${path.module}/lambda/sql/discounts.sql")
+                  QueryExecutionContext = {Database = "products_db"}
+                  ResultConfiguration = {OutputLocation = "s3://bdm060897-prod/scraper/athena-results/discounts/"}
+                }
+                End = true
+              }
+            }
+          },
+          { 
+          StartAt = "avg_deals_30d",
+            States = {
+              avg_deals_30d = {
+                Type = "Task",
+                Resource = "arn:aws:states:::athena:startQueryExecution.sync:2"
+                Parameters = {
+                  QueryString = file("${path.module}/lambda/sql/30d_avg_deals.sql")
+                  QueryExecutionContext = {Database = "products_db"}
+                  ResultConfiguration = {OutputLocation = "s3://bdm060897-prod/scraper/athena-results/thirtyd_avg_deals/"}
+                }
+                End = true
+              }
+            }
+          }
+        ],
+      End = true
+      }
+    }
+  })
+  tags = module.label.tags
+}
+
+
+
+
+

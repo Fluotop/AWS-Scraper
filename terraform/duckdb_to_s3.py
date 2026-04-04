@@ -3,7 +3,8 @@ import boto3
 import os
 import shutil
 
-DUCKDB_FILE = "products.duckdb"
+WORKSPACE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DUCKDB_FILE = os.path.join(WORKSPACE_DIR, "src", "products.duckdb")
 TABLE = "products"
 
 LOCAL_EXPORT = "export"
@@ -22,7 +23,22 @@ con = duckdb.connect(DUCKDB_FILE)
 # export partitioned parquet locally
 con.execute(f"""
 COPY (
-    SELECT *
+    SELECT
+        CAST(product_id AS VARCHAR) AS product_id,
+        store,
+        scrape_date,
+        name,
+        brand,
+        maincat,
+        cat,
+        subcat,
+        catid,
+        image,
+        price,
+        priceWithoutDiscount,
+        list_price,
+        is_available,
+        link
     FROM {TABLE}
 )
 TO '{LOCAL_EXPORT}'

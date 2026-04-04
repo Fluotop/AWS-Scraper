@@ -102,7 +102,6 @@ class BaseScraper(ABC):
         """
         for attempt in range(self.MAX_RETRIES):
             response = self.session.get(url, headers=self.HEADERS, params=params, timeout=10)
-            print(response.request.url)
             
             if response.status_code in (200, 206):
                 return response

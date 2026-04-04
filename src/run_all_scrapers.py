@@ -13,7 +13,7 @@ from scraper.scrapers.superaki_scraper_new import SuperakiScraper
 # ---------------------------------------------------------------------------
 # CONFIGURATION - edit these values to switch storage / resume from a category
 # ---------------------------------------------------------------------------
-STORAGE_TYPE = "aws"  # "local" or "aws"
+STORAGE_TYPE = "local"  # "local" or "aws"
 PRODUCTS_DB = "products.duckdb"  # used when STORAGE_TYPE == "local"
 CATEGORIES_DB = "categories.duckdb"
 AWS_BUCKET = "bdm060897-prod"  # required when STORAGE_TYPE == "aws"
@@ -23,7 +23,8 @@ AWS_PREFIX = "scraper/products"  # prefix/key prefix for parquet files
 # Each scraper can have its own `start_from` path and `category_filter`.
 # Set to None to scrape all categories (or start from beginning).
 CHEDRAUI_START_FROM = None
-CHEDRAUI_CATEGORY_FILTER = {"name": "Supermercado", "level": "1"}
+#CHEDRAUI_CATEGORY_FILTER = {"name": "Supermercado", "level": "1"}
+CHEDRAUI_CATEGORY_FILTER = None
 
 SUPERAKI_START_FROM = None
 SUPERAKI_CATEGORY_FILTER = None
