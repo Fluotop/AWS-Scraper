@@ -2,10 +2,23 @@ import boto3
 import os
 import time
 
+s3              = boto3.client("s3")
 athena          = boto3.client("athena")
 DATABASE        = os.environ.get("DATABASE", "products.db")
 OUTPUT_LOCATION = os.environ.get("OUTPUT_LOCATION", "s3://bdm060897-prod/scraper/athena-results/")
 
+
+def delete_s3_prefix(bucket, prefix):
+    paginator = s3.get_paginator("list_objects_v2")
+    for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+        objects = page.get("Contents", [])
+        if objects:
+            s3.delete_objects(
+                Bucket=bucket,
+                Delete={"Objects": [{"Key": o["Key"]} for o in objects]}
+            )
+            
+            
 def _run_query(sql, prefix = "tmp/"):
     return athena.start_query_execution(
         QueryString=sql,
@@ -41,7 +54,7 @@ SQL_DROP_PRICE_CHANGES = "DROP TABLE IF EXISTS price_changes;"
 SQL_CREATE_PRICE_CHANGES = """
 CREATE TABLE price_changes
 WITH (
-    location = 's3://bdm060897-prod/scraper/athena-results/price_changes/',
+    external_location = 's3://bdm060897-prod/scraper/athena-results/price_changes/',
     format   = 'PARQUET'
 )
 AS
@@ -78,6 +91,12 @@ WHERE scrape_date = (SELECT MAX(scrape_date) FROM last_two_dates)
 
 def lambda_handler(event, context):
     print("Rebuilding price_changes …")
+    run("MSCK REPAIR TABLE products;")
     run(SQL_DROP_PRICE_CHANGES)
+    delete_s3_prefix("bdm060897-prod", "scraper/athena-results/price_changes/")
     run(SQL_CREATE_PRICE_CHANGES)
+    delete_s3_prefix("bdm060897-prod", "scraper/athena-results/list_price_increases/")
+    delete_s3_prefix("bdm060897-prod", "scraper/athena-results/list_price_decreases/")
+    delete_s3_prefix("bdm060897-prod", "scraper/athena-results/discounts/")
+    delete_s3_prefix("bdm060897-prod", "scraper/athena-results/avg_deals_30d/")
     return {"status": "ready"}

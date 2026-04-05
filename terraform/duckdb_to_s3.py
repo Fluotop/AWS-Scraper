@@ -35,7 +35,7 @@ COPY (
         catid,
         image,
         price,
-        priceWithoutDiscount,
+        priceWithoutDiscount AS pricewithoutdiscount,
         list_price,
         is_available,
         link

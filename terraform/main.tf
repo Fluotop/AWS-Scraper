@@ -296,7 +296,7 @@ resource "aws_glue_catalog_table" "products" {
     }
 
     columns {
-      name = "priceWithoutDiscount"
+      name = "pricewithoutdiscount"
       type = "double"
     }
 
@@ -318,7 +318,7 @@ resource "aws_glue_catalog_table" "products" {
 
   partition_keys {
     name = "scrape_date"
-    type = "date"
+    type = "string"
   }
 
   partition_keys {
@@ -369,7 +369,8 @@ resource "aws_iam_role_policy" "lambda_policy" {
         Action = [
           "s3:GetObject",
           "s3:ListBucket",
-          "s3:PutObject"
+          "s3:PutObject",
+          "s3:DeleteObject"
         ]
         Resource = "*"
       },
@@ -390,7 +391,9 @@ resource "aws_iam_role_policy" "lambda_policy" {
           "glue:GetTable",
           "glue:GetTables",
           "glue:GetPartition",
-          "glue:GetPartitions"
+          "glue:GetPartitions",
+          "glue:CreateTable",
+          "glue:DeleteTable"
         ]
         Resource = "*"
       }
@@ -412,6 +415,7 @@ resource "aws_lambda_function" "athena_prepare_tables" {
   role          = aws_iam_role.lambda_role_athena.arn
   handler       = "lambda_prepare.lambda_handler"
   runtime       = "python3.11"
+  timeout       = 300
 
   filename         = data.archive_file.lambda_prepare_zip.output_path
   source_code_hash = filebase64sha256(data.archive_file.lambda_prepare_zip.output_path)
@@ -624,7 +628,7 @@ resource "aws_sfn_state_machine" "scraper_dashboard_state_machine" {
                 Parameters = {
                   QueryString           = file("${path.module}/lambda/sql/30d_avg_deals.sql")
                   QueryExecutionContext = { Database = "products_db" }
-                  ResultConfiguration   = { OutputLocation = "s3://bdm060897-prod/scraper/athena-results/thirtyd_avg_deals/" }
+                  ResultConfiguration   = { OutputLocation = "s3://bdm060897-prod/scraper/athena-results/avg_deals_30d/" }
                 }
                 End = true
               }
