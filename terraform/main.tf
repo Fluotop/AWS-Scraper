@@ -318,7 +318,7 @@ resource "aws_glue_catalog_table" "products" {
 
   partition_keys {
     name = "scrape_date"
-    type = "string"
+    type = "date"
   }
 
   partition_keys {
@@ -393,7 +393,8 @@ resource "aws_iam_role_policy" "lambda_policy" {
           "glue:GetPartition",
           "glue:GetPartitions",
           "glue:CreateTable",
-          "glue:DeleteTable"
+          "glue:DeleteTable",
+          "glue:BatchCreatePartition" #keep or msck doesnt work
         ]
         Resource = "*"
       }
@@ -542,7 +543,7 @@ resource "aws_iam_role_policy" "scraper_dashboard_step_function_policy" {
           "glue:GetTable",
           "glue:GetTables",
           "glue:GetPartition",
-          "glue:GetPartitions"
+          "glue:GetPartitions",
         ]
         Resource = "*"
       },

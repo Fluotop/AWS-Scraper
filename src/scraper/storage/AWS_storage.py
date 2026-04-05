@@ -39,6 +39,7 @@ class AWSStorage(BaseStorage):
         df = df.with_columns(
             pl.col(self.STRING_COLUMNS).cast(pl.Utf8, strict=False),
             pl.col("scrape_date").cast(pl.Date),
+            pl.col("is_available").cast(pl.Boolean, strict=False),
         )
 
         store = df["store"][0]
