@@ -7,5 +7,5 @@ class BaseStorage(ABC):
         pass
 
     @abstractmethod
-    def insert_products(self, products_data):
+    def insert_products(self, products_data, category_id):
         pass

@@ -226,7 +226,8 @@ class BaseScraper(ABC):
         for idx, path in enumerate(paths, 1):
             print(f"\n[{idx}/{len(paths)}] Scraping: {path}")
             products_data = self.scrape_category(path)
-            self.storage.insert_products(products_data)
+            category_id = path.strip("/").split("/")[-1]
+            self.storage.insert_products(products_data, category_id=category_id)
             self.polite_sleep()
         
         print("\nScraping completed!")
