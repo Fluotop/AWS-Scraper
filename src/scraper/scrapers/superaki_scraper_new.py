@@ -162,7 +162,7 @@ class SuperakiScraper(BaseScraper):
             elif p.get("id") == "OFFER_PRICE":
                 price = p.get("value", {}).get("centUnitAmount")
         
-        is_available = product_data.get("availability")
+        is_available = product_data.get("availability").lower() in ("true", "1")
         scrape_date = date.today()
         
         return (

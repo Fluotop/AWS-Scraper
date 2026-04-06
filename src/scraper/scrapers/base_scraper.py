@@ -1,6 +1,7 @@
 import time
 import duckdb
 import random
+import traceback
 from abc import ABC, abstractmethod
 
 from scraper.storage.local_storage import LocalStorage
@@ -225,9 +226,13 @@ class BaseScraper(ABC):
         
         for idx, path in enumerate(paths, 1):
             print(f"\n[{idx}/{len(paths)}] Scraping: {path}")
-            products_data = self.scrape_category(path)
-            category_id = path.strip("/").split("/")[-1]
-            self.storage.insert_products(products_data, category_id=category_id)
+            try:
+                products_data = self.scrape_category(path)
+                category_id = path.strip("/").split("/")[-1]
+                self.storage.insert_products(products_data, category_id=category_id)
+            except Exception as exc:
+                print(f"[{self.store_name}] ERROR on {path}: {exc}")
+                traceback.print_exc()
             self.polite_sleep()
         
         print("\nScraping completed!")
