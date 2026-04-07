@@ -5,3 +5,4 @@ polars
 cloudscraper
 beautifulsoup4
 playwright
+pytest

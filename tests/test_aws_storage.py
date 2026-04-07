@@ -9,7 +9,8 @@ import pytest
 from moto import mock_aws
 
 from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parents[1] ))
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from src.scraper.storage.AWS_storage import AWSStorage
 
