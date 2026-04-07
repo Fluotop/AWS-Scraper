@@ -74,7 +74,7 @@ class ChedrauiScraper(BaseScraper):
                 permissions=["geolocation"],
             )
             page = context.new_page()
-            page.goto("https://www.chedraui.com.mx", timeout=60000, wait_until="domcontentloaded")
+            page.goto("https://www.chedraui.com.mx", timeout=120000, wait_until="domcontentloaded")
             page.wait_for_timeout(3000)
             cookies = {c["name"]: c["value"] for c in context.cookies()}
             browser.close()
