@@ -175,7 +175,7 @@ class ChedrauiScraper(BaseScraper):
         price_without_discount = product.get("items")[0] \
                                     .get("sellers")[0] \
                                     .get("commertialOffer", {}) \
-                                    .get("priceWithoutDiscount")
+                                    .get("PriceWithoutDiscount")
         list_price = product.get("items")[0] \
                             .get("sellers")[0] \
                             .get("commertialOffer", {}) \
