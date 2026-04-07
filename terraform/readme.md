@@ -1,0 +1,1 @@
+terraform apply '-replace=aws_glue_catalog_table.products' to reset glue catalog after duckdb to s upload

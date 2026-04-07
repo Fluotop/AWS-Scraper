@@ -281,11 +281,6 @@ resource "aws_glue_catalog_table" "products" {
     }
 
     columns {
-      name = "catid"
-      type = "string"
-    }
-
-    columns {
       name = "image"
       type = "string"
     }
@@ -323,6 +318,11 @@ resource "aws_glue_catalog_table" "products" {
 
   partition_keys {
     name = "store"
+    type = "string"
+  }
+
+  partition_keys {
+    name = "catid"
     type = "string"
   }
 }
@@ -394,7 +394,9 @@ resource "aws_iam_role_policy" "lambda_policy" {
           "glue:GetPartitions",
           "glue:CreateTable",
           "glue:DeleteTable",
-          "glue:BatchCreatePartition" #keep or msck doesnt work
+          "glue:BatchCreatePartition", #keep or msck doesnt work
+          "glue:DeletePartition",
+          "glue:BatchDeletePartition"
         ]
         Resource = "*"
       }

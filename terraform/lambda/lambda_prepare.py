@@ -4,6 +4,7 @@ import time
 
 s3              = boto3.client("s3")
 athena          = boto3.client("athena")
+glue            = boto3.client("glue")
 DATABASE        = os.environ.get("DATABASE", "products.db")
 OUTPUT_LOCATION = os.environ.get("OUTPUT_LOCATION", "s3://bdm060897-prod/scraper/athena-results/")
 
@@ -91,6 +92,21 @@ WHERE scrape_date = (SELECT MAX(scrape_date) FROM last_two_dates)
 
 def lambda_handler(event, context):
     print("Rebuilding price_changes …")
+
+    # Drop all existing Glue partitions, then re-add only what's in S3
+    #paginator = glue.get_paginator("get_partitions")
+    #existing = []
+    #for page in paginator.paginate(DatabaseName=DATABASE, TableName="products"):
+    #    existing.extend(page["Partitions"])
+
+    #if existing:
+    #    glue.batch_delete_partition(
+    #        DatabaseName=DATABASE,
+    #        TableName="products",
+    #        PartitionsToDelete=[{"Values": p["Values"]} for p in existing]
+    #    )
+    #    print(f"Dropped {len(existing)} stale partitions")
+
     run("MSCK REPAIR TABLE products;")
     run(SQL_DROP_PRICE_CHANGES)
     delete_s3_prefix("bdm060897-prod", "scraper/athena-results/price_changes/")

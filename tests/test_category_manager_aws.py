@@ -4,7 +4,6 @@ from pathlib import Path
 import sys
 import boto3
 import duckdb
-import pytest
 from moto import mock_aws
 
 from pathlib import Path
