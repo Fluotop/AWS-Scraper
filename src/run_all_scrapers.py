@@ -6,9 +6,12 @@ To switch between local DuckDB storage and AWS S3 storage, edit the configuratio
 """
 
 import threading
+import traceback
 
 from scraper.scrapers.chedraui_scraper_new import ChedrauiScraper
 from scraper.scrapers.superaki_scraper_new import SuperakiScraper
+from scraper.dashboard.query_local import run_queries
+from scraper.dashboard.dashboard_local import build_dashboard
 
 # ---------------------------------------------------------------------------
 # CONFIGURATION - edit these values to switch storage / resume from a category
@@ -24,7 +27,7 @@ AWS_PREFIX = "scraper/products"  # prefix/key prefix for parquet files
 # Set to None to scrape all categories (or start from beginning).
 CHEDRAUI_START_FROM = None
 #CHEDRAUI_CATEGORY_FILTER = {"name": "Supermercado", "level": "1"}
-CHEDRAUI_CATEGORY_FILTER = None
+#CHEDRAUI_CATEGORY_FILTER = None
 
 SUPERAKI_START_FROM = None
 SUPERAKI_CATEGORY_FILTER = None
@@ -74,6 +77,8 @@ class ScraperThread(threading.Thread):
             super().run()
         except Exception as exc:
             self.error = exc
+            print(f"[{self.name}] THREAD ERROR: {exc}")
+            traceback.print_exc()
 
 
 def main():
@@ -99,6 +104,10 @@ def main():
     if failed_threads:
         errors = "; ".join(f"{t.name}: {t.error}" for t in failed_threads)
         raise RuntimeError(f"One or more scraper threads failed: {errors}")
+
+    if STORAGE_TYPE == "local":
+        run_queries()
+        build_dashboard()
 
 
 if __name__ == "__main__":
