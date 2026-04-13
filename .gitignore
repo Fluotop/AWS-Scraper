@@ -1,0 +1,18 @@
+*db
+__init__.py
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.*
+*key*
+export/*
+run_all_scrapers.py
+status.txt
+*.parquet
+*.ini
+
+# Lambda layer build artifacts
+terraform/lambda/layer_src/
+terraform/lambda/python/
+terraform/history_layer.zip

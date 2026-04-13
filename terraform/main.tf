@@ -29,6 +29,7 @@ resource "aws_iam_role" "lambda_role_scraper" {
       }
     ]
   })
+  tags = module.label.tags
 }
 
 #-------------------------------
@@ -96,7 +97,7 @@ resource "aws_cloudwatch_event_rule" "daily_scraper" {
 
   name = "daily-scraper-trigger"
 
-  schedule_expression = "cron(0 13 ? * MON *)"
+  schedule_expression = "cron(0 13 ? * TUE *)"
 
   tags = module.label.tags
 }
@@ -153,6 +154,7 @@ resource "aws_iam_role" "ec2_role" {
       }
     ]
   })
+  tags = module.label.tags
 }
 
 #-------------------------------
@@ -434,6 +436,142 @@ resource "aws_lambda_function" "athena_prepare_tables" {
 }
 
 # ----------------------------
+# history lambda functions
+# ----------------------------
+
+#layer: zip folder that has python
+data "archive_file" "history_layer_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/lambda/layer_src"
+  output_path = "${path.module}/history_layer.zip"
+}
+
+resource "aws_s3_object" "history_layer_zip" {
+  bucket = "bdm060897-prod"
+  key    = "lambda-layers/history_layer.zip"
+  source = data.archive_file.history_layer_zip.output_path
+  etag   = filemd5(data.archive_file.history_layer_zip.output_path)
+}
+
+resource "aws_lambda_layer_version" "history_layer" {
+  layer_name          = "history-layer"
+  compatible_runtimes = ["python3.11"]
+  s3_bucket           = aws_s3_object.history_layer_zip.bucket
+  s3_key              = aws_s3_object.history_layer_zip.key
+  source_code_hash    = filebase64sha256(data.archive_file.history_layer_zip.output_path)
+}
+
+data "archive_file" "avg_deals_30d_history_zip" {
+  type        = "zip"
+  source_file = "${path.module}/lambda/avg_deals_30d_history.py"
+  output_path = "${path.module}/avg_deals_30d_history.zip"
+}
+
+resource "aws_lambda_function" "avg_deals_30d_history" {
+  function_name = "avg-deals-30d-history"
+  role          = aws_iam_role.lambda_role_athena.arn
+  handler       = "avg_deals_30d_history.lambda_handler"
+  runtime       = "python3.11"
+  timeout       = 300
+
+  layers = [aws_lambda_layer_version.history_layer.arn]
+
+  filename         = data.archive_file.avg_deals_30d_history_zip.output_path
+  source_code_hash = filebase64sha256(data.archive_file.avg_deals_30d_history_zip.output_path)
+  tags = module.label.tags
+}
+
+data "archive_file" "discounts_history_zip" {
+  type        = "zip"
+  source_file = "${path.module}/lambda/discounts_history.py"
+  output_path = "${path.module}/discounts_history.zip"
+}
+
+resource "aws_lambda_function" "discounts_history" {
+  function_name = "discounts-history"
+  role          = aws_iam_role.lambda_role_athena.arn
+  handler       = "discounts_history.lambda_handler"
+  runtime       = "python3.11"
+  timeout       = 300
+
+  layers = [aws_lambda_layer_version.history_layer.arn]
+
+  filename         = data.archive_file.discounts_history_zip.output_path
+  source_code_hash = filebase64sha256(data.archive_file.discounts_history_zip.output_path)
+  tags = module.label.tags
+}
+
+data "archive_file" "list_price_increases_history_zip" {
+  type        = "zip"
+  source_file = "${path.module}/lambda/list_price_increases_history.py"
+  output_path = "${path.module}/list_price_increases_history.zip"
+}
+
+resource "aws_lambda_function" "list_price_increases_history" {
+  function_name = "list_price_increases-history"
+  role          = aws_iam_role.lambda_role_athena.arn
+  handler       = "list_price_increases_history.lambda_handler"
+  runtime       = "python3.11"
+  timeout       = 300
+
+  layers = [aws_lambda_layer_version.history_layer.arn]
+
+  filename         = data.archive_file.list_price_increases_history_zip.output_path
+  source_code_hash = filebase64sha256(data.archive_file.list_price_increases_history_zip.output_path)
+  tags = module.label.tags
+}
+
+data "archive_file" "list_price_descreases_history_zip" {
+  type        = "zip"
+  source_file = "${path.module}/lambda/list_price_descreases_history.py"
+  output_path = "${path.module}/list_price_descreases_history.zip"
+}
+
+resource "aws_lambda_function" "list_price_descreases_history" {
+  function_name = "list_price_descreases-history"
+  role          = aws_iam_role.lambda_role_athena.arn
+  handler       = "list_price_descreases_history.lambda_handler"
+  runtime       = "python3.11"
+  timeout       = 300
+
+  layers = [aws_lambda_layer_version.history_layer.arn]
+
+  filename         = data.archive_file.list_price_descreases_history_zip.output_path
+  source_code_hash = filebase64sha256(data.archive_file.list_price_descreases_history_zip.output_path)
+  tags = module.label.tags
+}
+
+# ----------------------------
+# Dashboard lambda functions
+# ----------------------------
+data "archive_file" "dashboard_aws_zip" {
+  type        = "zip"
+  source_file = "${path.module}/lambda/dashboard_aws.py"
+  output_path = "${path.module}/dashboard_aws.zip"
+}
+
+resource "aws_lambda_function" "dashboard_aws" {
+  function_name = "dashboard-aws"
+  role          = aws_iam_role.lambda_role_athena.arn
+  handler       = "dashboard_aws.lambda_handler"
+  runtime       = "python3.11"
+  timeout       = 300
+  memory_size   = 512
+
+  layers           = [aws_lambda_layer_version.history_layer.arn]
+  filename         = data.archive_file.dashboard_aws_zip.output_path
+  source_code_hash = filebase64sha256(data.archive_file.dashboard_aws_zip.output_path)
+
+  environment {
+    variables = {
+      BUCKET         = "bdm060897-prod"
+      RESULTS_PREFIX = "scraper/athena-results"
+      DASHBOARD_KEY  = "scraper/dashboard/dashboard.html"
+    }
+  }
+  tags = module.label.tags
+}
+# ----------------------------
 # s3 EventBridge rule
 # ----------------------------
 
@@ -554,7 +692,14 @@ resource "aws_iam_role_policy" "scraper_dashboard_step_function_policy" {
         Action = [
           "lambda:InvokeFunction"
         ]
-        Resource = aws_lambda_function.athena_prepare_tables.arn
+        Resource = [
+          aws_lambda_function.athena_prepare_tables.arn,
+          aws_lambda_function.avg_deals_30d_history.arn,
+          aws_lambda_function.discounts_history.arn,
+          aws_lambda_function.list_price_increases_history.arn,
+          aws_lambda_function.list_price_descreases_history.arn,
+          aws_lambda_function.dashboard_aws.arn
+        ]
       }
     ]
   })
@@ -576,6 +721,8 @@ resource "aws_sfn_state_machine" "scraper_dashboard_state_machine" {
       },
       run_queries_in_parallel = {
         Type = "Parallel",
+        Next = "dashboard_lambda",
+
         Branches = [
           {
             StartAt = "list_price_increases",
@@ -588,7 +735,12 @@ resource "aws_sfn_state_machine" "scraper_dashboard_state_machine" {
                   QueryExecutionContext = { Database = "products_db" }
                   ResultConfiguration   = { OutputLocation = "s3://bdm060897-prod/scraper/athena-results/list_price_increases/" }
                 }
-                End = true
+                Next = "list_price_increases_history"
+              },
+              list_price_increases_history = {
+                Type     = "Task",
+                Resource = aws_lambda_function.list_price_increases_history.arn
+                End      = true
               }
             }
           },
@@ -603,7 +755,12 @@ resource "aws_sfn_state_machine" "scraper_dashboard_state_machine" {
                   QueryExecutionContext = { Database = "products_db" }
                   ResultConfiguration   = { OutputLocation = "s3://bdm060897-prod/scraper/athena-results/list_price_decreases/" }
                 }
-                End = true
+                Next = "list_price_descreases_history"
+              },
+              list_price_descreases_history = {
+                Type     = "Task",
+                Resource = aws_lambda_function.list_price_descreases_history.arn
+                End      = true
               }
             }
           },
@@ -618,7 +775,12 @@ resource "aws_sfn_state_machine" "scraper_dashboard_state_machine" {
                   QueryExecutionContext = { Database = "products_db" }
                   ResultConfiguration   = { OutputLocation = "s3://bdm060897-prod/scraper/athena-results/discounts/" }
                 }
-                End = true
+                Next = "discounts_history"
+              },
+              discounts_history = {
+                Type     = "Task",
+                Resource = aws_lambda_function.discounts_history.arn
+                End      = true
               }
             }
           },
@@ -629,16 +791,25 @@ resource "aws_sfn_state_machine" "scraper_dashboard_state_machine" {
                 Type     = "Task",
                 Resource = "arn:aws:states:::athena:startQueryExecution.sync"
                 Parameters = {
-                  QueryString           = file("${path.module}/lambda/sql/30d_avg_deals.sql")
+                  QueryString           = file("${path.module}/lambda/sql/avg_deals_30d.sql")
                   QueryExecutionContext = { Database = "products_db" }
                   ResultConfiguration   = { OutputLocation = "s3://bdm060897-prod/scraper/athena-results/avg_deals_30d/" }
                 }
-                End = true
+                Next = "avg_deals_30d_history"
+              },
+              avg_deals_30d_history = {
+                Type     = "Task",
+                Resource = aws_lambda_function.avg_deals_30d_history.arn
+                End      = true
               }
             }
           }
         ],
-        End = true
+      },
+      dashboard_lambda = {
+        Type     = "Task",
+        Resource = aws_lambda_function.dashboard_aws.arn
+        End      = true
       }
     }
   })

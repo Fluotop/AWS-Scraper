@@ -2,7 +2,7 @@
 
 Usage from project root:
     cd src
-    python category_manager.py
+    python scraper/category_manager.py
 """
 
 from scraper.scrapers.category_manager import main

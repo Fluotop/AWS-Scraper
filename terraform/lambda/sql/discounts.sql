@@ -1,6 +1,6 @@
 -- highest price decreases per store (sale price)
 
-SELECT name, product_id, brand, store, scrape_date,
+SELECT name, product_id, brand, store, link, image, scrape_date,
        prev_price,
        price                       AS current_price,
        -price_diff                 AS price_decrease,
@@ -11,6 +11,7 @@ FROM (
         ROW_NUMBER() OVER (PARTITION BY store ORDER BY price_pct_change ASC) AS rank
     FROM price_changes
     WHERE price < prev_price
+      AND price < list_price
 )
-WHERE rank <= 5
+WHERE rank <= 20
 ORDER BY store, rank;

@@ -1,0 +1,4 @@
+﻿polars==1.36.1
+plotly==6.7.0
+narwhals==2.19.0
+packaging==26.0

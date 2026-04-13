@@ -34,5 +34,5 @@ FROM (
     WHERE a.avg_price_30d > 0
       AND l.price < a.avg_price_30d
 )
-WHERE rank <= 5
+WHERE rank <= 20
 ORDER BY store, rank;
