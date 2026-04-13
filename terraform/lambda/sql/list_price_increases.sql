@@ -1,6 +1,6 @@
 --highest list price increases per store
 
-SELECT name, product_id, brand, store, link, image, scrape_date,
+SELECT name, product_id, brand, store, scrape_date,
        prev_list_price,
        list_price                      AS current_list_price,
        list_price_diff                 AS price_increase,

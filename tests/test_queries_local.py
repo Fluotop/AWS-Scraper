@@ -197,7 +197,7 @@ class TestDiscounts:
         assert (df["current_price"] < df["prev_price"]).all()
 
 
-# ── 30d_avg_deals.sql ────────────────────────────────────────────────────────
+# ── avg_deals_30d.sql ────────────────────────────────────────────────────────
 
 class TestBestDeals:
     EXPECTED_COLS = {
@@ -206,17 +206,17 @@ class TestBestDeals:
     }
 
     def test_columns(self, duckdb_con):
-        df = run(duckdb_con, "30d_avg_deals.sql")
+        df = run(duckdb_con, "avg_deals_30d.sql")
         assert self.EXPECTED_COLS == set(df.columns)
 
     def test_max_rank_per_store(self, duckdb_con):
-        df = run(duckdb_con, "30d_avg_deals.sql")
+        df = run(duckdb_con, "avg_deals_30d.sql")
         for store in df["store"].unique().to_list():
             grp = df.filter(pl.col("store") == store)
             assert grp["rank"].max() <= 5, f"{store}: rank exceeded 5"
 
     def test_sorted_by_store_then_rank(self, duckdb_con):
-        df = run(duckdb_con, "30d_avg_deals.sql")
+        df = run(duckdb_con, "avg_deals_30d.sql")
         stores = df["store"].to_list()
         assert stores == sorted(stores)
         for store in df["store"].unique().to_list():
@@ -224,29 +224,29 @@ class TestBestDeals:
             assert grp["rank"].to_list() == list(range(1, len(grp) + 1))
 
     def test_chedraui_rank1_best_discount(self, duckdb_con):
-        df = run(duckdb_con, "30d_avg_deals.sql")
+        df = run(duckdb_con, "avg_deals_30d.sql")
         chedraui = df.filter(pl.col("store") == "chedraui").sort("rank")
         # D_C1: 90% (1000→100) > D_C2: 84% (500→80) > C5: 80% (100→20)
         assert chedraui[0, "product_id"] == "D_C1"
         assert chedraui[0, "pct_discount"] == pytest.approx(90.0, rel=1e-2)
 
     def test_superaki_rank1_best_discount(self, duckdb_con):
-        df = run(duckdb_con, "30d_avg_deals.sql")
+        df = run(duckdb_con, "avg_deals_30d.sql")
         superaki = df.filter(pl.col("store") == "superaki").sort("rank")
         # D_S1: 90% (1000→100) > S3: 50% (180→90)
         assert superaki[0, "product_id"] == "D_S1"
         assert superaki[0, "pct_discount"] == pytest.approx(90.0, rel=1e-2)
 
     def test_current_price_below_avg(self, duckdb_con):
-        df = run(duckdb_con, "30d_avg_deals.sql")
+        df = run(duckdb_con, "avg_deals_30d.sql")
         assert (df["current_price"] < df["avg_price_30d"]).all()
 
     def test_discount_values_positive(self, duckdb_con):
-        df = run(duckdb_con, "30d_avg_deals.sql")
+        df = run(duckdb_con, "avg_deals_30d.sql")
         assert (df["pct_discount"] > 0).all()
 
     def test_excludes_no_change_products(self, duckdb_con):
-        df = run(duckdb_con, "30d_avg_deals.sql")
+        df = run(duckdb_con, "avg_deals_30d.sql")
         ids = set(df["product_id"].to_list())
         # Price-change products use a different date pattern,
         # so they have no 30d history — they should not dominate deals

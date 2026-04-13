@@ -1,6 +1,6 @@
 -- highest list price decreases per store
 
-SELECT name, product_id, brand, is_available, store, link, image, scrape_date,
+SELECT name, product_id, brand, is_available, store, scrape_date,
        prev_list_price,
        list_price                                                        AS current_list_price,
        prev_list_price - list_price                                      AS price_decrease,

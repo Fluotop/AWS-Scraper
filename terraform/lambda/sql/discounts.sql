@@ -1,6 +1,6 @@
 -- highest price decreases per store (sale price)
 
-SELECT name, product_id, brand, store, link, image, scrape_date,
+SELECT name, product_id, brand, store, scrape_date,
        prev_price,
        price                       AS current_price,
        -price_diff                 AS price_decrease,

@@ -22,13 +22,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from src.scraper.scrapers.chedraui_scraper_new import ChedrauiScraper
 
 # ---------------------------------------------------------------------------
-# Snapshot values recorded on 2026-04-07
+# Snapshot values recorded on 2026-04-13
 # ---------------------------------------------------------------------------
 SNAPSHOT = {
-    "product_id":             "3677377",
+    "product_id":             "3505499",
     "store_name":             "chedraui",
-    "name":                   "Té Mccormick Manzanilla con 30 Sobres",
-    "brand":                  "McCormick",
+    "name":                   "Café Soluble Nescafé Dolca 170g + Frasco de 46g",
+    "brand":                  "Nescafé",
     "maincat":                "/Supermercado/Despensa/Cafe y te/",
     "cat":                    "/Supermercado/Despensa/",
     "subcat":                 "/Supermercado/",
@@ -40,7 +40,7 @@ SNAPSHOT = {
 
 LIVE_URL = (
     "https://www.chedraui.com.mx/api/catalog_system/pub/products/search/"
-    "?fq=C%3A%2F1%2F107%2F10711%2F&_from=0&_to=0&O=OrderByScoreDESC"
+    "?fq=productId:3505499"
 )
 
 HEADERS = {

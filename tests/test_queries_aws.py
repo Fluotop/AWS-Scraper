@@ -215,7 +215,7 @@ class TestDiscountsAWS:
         assert set(snapshot["store"].unique().to_list()) == set(result["store"].unique().to_list())
 
 
-# ── 30d_avg_deals.sql ────────────────────────────────────────────────────────
+# ── avg_deals_30d.sql ────────────────────────────────────────────────────────
 
 class TestBestDealsAWS:
     EXPECTED_COLS = {
@@ -225,7 +225,7 @@ class TestBestDealsAWS:
 
     @pytest.fixture(scope="class")
     def result(self, athena):
-        return run_sql_file(athena, "30d_avg_deals.sql")
+        return run_sql_file(athena, "avg_deals_30d.sql")
 
     def test_columns(self, result):
         assert self.EXPECTED_COLS == set(result.columns)
