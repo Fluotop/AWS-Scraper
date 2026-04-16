@@ -47,3 +47,15 @@ variable "lambda_log_level" {
   description = "Log level for Lambda function"
   type        = string
 }
+variable "bucket_name" {
+  description = "Name of the S3 bucket"
+  type        = string
+}
+variable "domain_name" {
+  description = "Domain name for the application"
+  type        = string
+}
+variable "certificate_domain" {
+  description = "Domain for which to request SSL certificate"
+  type        = string
+}

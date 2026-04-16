@@ -75,7 +75,7 @@ def make_history_chart_html(product_id: str, store: str, history_df: pl.DataFram
     )
     fig_json = fig.to_json()
     return (
-        f'<div id="{div_id}" style="flex:2;min-width:220px;height:130px"></div>'
+        f'<div id="{div_id}" class="product-chart"></div>'
         f'<script>Plotly.newPlot("{div_id}",{fig_json}.data,{fig_json}.layout,'
         f'{{"displayModeBar":false,"responsive":true}});</script>'
     )
@@ -105,8 +105,7 @@ def product_row_html(row: dict, history_df: pl.DataFrame, is_increase: bool,
     chart  = make_history_chart_html(row["product_id"], row["store"], history_df)
     pct_change = row["pct_change"]
     return f"""
-    <div style="display:flex;align-items:center;padding:12px 16px;gap:8px;
-                border-bottom:1px solid #e0e0e0;">
+    <div class="product-row">
       <img src="{img_src}" style="width:72px;height:72px;object-fit:contain;
            border-radius:6px;flex-shrink:0;" onerror="this.src='{_NO_IMG_SVG}'"/>
       <div style="flex:1;padding:0 16px;min-width:0;overflow:hidden;">
@@ -181,13 +180,23 @@ def build_html(
     *{{box-sizing:border-box;margin:0;padding:0}}
     body{{font-family:'Segoe UI',Inter,Arial,sans-serif;background:#f5f5f5;min-height:100vh}}
     .header{{font-size:20px;font-weight:700;padding:18px 32px;background:#1565c0;color:#fff}}
-    .tabs{{display:flex;border-bottom:2px solid #e0e0e0;background:#fff;padding:0 28px}}
+    .tabs{{display:flex;overflow-x:auto;border-bottom:2px solid #e0e0e0;background:#fff;padding:0 28px}}
     .tab{{padding:14px 22px;cursor:pointer;font-size:14px;font-weight:600;
-          color:#757575;border-bottom:3px solid transparent;margin-bottom:-2px}}
+          color:#757575;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}}
     .tab.active{{color:#1565c0;border-bottom-color:#1565c0}}
     .tab:hover{{color:#1565c0}}
     .panel{{display:none;padding:28px;max-width:1280px;margin:0 auto}}
     .panel.active{{display:block}}
+    .product-row{{display:flex;align-items:center;padding:12px 16px;gap:8px;border-bottom:1px solid #e0e0e0}}
+    .product-chart{{flex:2;min-width:220px;height:130px}}
+    @media(max-width:640px){{
+      .header{{font-size:16px;padding:14px 16px}}
+      .tabs{{padding:0 8px}}
+      .tab{{padding:10px 12px;font-size:12px}}
+      .panel{{padding:12px}}
+      .product-row{{flex-wrap:wrap}}
+      .product-chart{{flex:none;width:100%;min-width:0;height:120px}}
+    }}
   </style>
 </head>
 <body>

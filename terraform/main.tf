@@ -97,7 +97,7 @@ resource "aws_cloudwatch_event_rule" "daily_scraper" {
 
   name = "daily-scraper-trigger"
 
-  schedule_expression = "cron(0 13 ? * TUE *)"
+  schedule_expression = "cron(0 8 ? * TUE *)"
 
   tags = module.label.tags
 }
@@ -478,7 +478,7 @@ resource "aws_lambda_function" "avg_deals_30d_history" {
 
   filename         = data.archive_file.avg_deals_30d_history_zip.output_path
   source_code_hash = filebase64sha256(data.archive_file.avg_deals_30d_history_zip.output_path)
-  tags = module.label.tags
+  tags             = module.label.tags
 }
 
 data "archive_file" "discounts_history_zip" {
@@ -498,7 +498,7 @@ resource "aws_lambda_function" "discounts_history" {
 
   filename         = data.archive_file.discounts_history_zip.output_path
   source_code_hash = filebase64sha256(data.archive_file.discounts_history_zip.output_path)
-  tags = module.label.tags
+  tags             = module.label.tags
 }
 
 data "archive_file" "list_price_increases_history_zip" {
@@ -518,7 +518,7 @@ resource "aws_lambda_function" "list_price_increases_history" {
 
   filename         = data.archive_file.list_price_increases_history_zip.output_path
   source_code_hash = filebase64sha256(data.archive_file.list_price_increases_history_zip.output_path)
-  tags = module.label.tags
+  tags             = module.label.tags
 }
 
 data "archive_file" "list_price_descreases_history_zip" {
@@ -538,7 +538,7 @@ resource "aws_lambda_function" "list_price_descreases_history" {
 
   filename         = data.archive_file.list_price_descreases_history_zip.output_path
   source_code_hash = filebase64sha256(data.archive_file.list_price_descreases_history_zip.output_path)
-  tags = module.label.tags
+  tags             = module.label.tags
 }
 
 # ----------------------------
@@ -745,7 +745,7 @@ resource "aws_sfn_state_machine" "scraper_dashboard_state_machine" {
             }
           },
           {
-            StartAt = "list_price_decreases",
+            StartAt = "list_price_decreases"
             States = {
               list_price_decreases = {
                 Type     = "Task",
@@ -816,7 +816,109 @@ resource "aws_sfn_state_machine" "scraper_dashboard_state_machine" {
   tags = module.label.tags
 }
 
+# ----------------------------
+# Cloudfront
+# ----------------------------
+
+data "aws_s3_bucket" "scraper_bucket" {
+  bucket = var.bucket_name
+}
+
+resource "aws_s3_bucket_policy" "bdm060897_policy" {
+  bucket = data.aws_s3_bucket.scraper_bucket.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        }
+        Action   = "s3:GetObject"
+        Resource = "${data.aws_s3_bucket.scraper_bucket.arn}/scraper/dashboard/*"
+        Condition = {
+          StringEquals = {
+            "AWS:SourceArn" = aws_cloudfront_distribution.scraper_distribution.arn
+          }
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_s3_bucket_public_access_block" "scraper_bucket" {
+  bucket                  = data.aws_s3_bucket.scraper_bucket.id
+  block_public_acls       = true
+  block_public_policy     = false
+  ignore_public_acls      = true
+  restrict_public_buckets = false
+}
+
+resource "aws_cloudfront_origin_access_control" "oac" {
+  name                              = "OAC_for_S3_scraper_bucket"
+  description                       = "Origin Access Control for S3 bucket access used in CV project"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
+}
 
 
+# Imported certificate for domain in us-east-1
+data "aws_acm_certificate" "scraper_cert" {
+  domain      = var.certificate_domain
+  statuses    = ["ISSUED"]
+  most_recent = true
+}
 
+resource "aws_cloudfront_distribution" "scraper_distribution" {
+  origin {
+    domain_name              = data.aws_s3_bucket.scraper_bucket.bucket_regional_domain_name
+    origin_id                = "S3-${data.aws_s3_bucket.scraper_bucket.id}"
+    origin_access_control_id = aws_cloudfront_origin_access_control.oac.id
+    origin_path              = "/scraper/dashboard"
+  }
 
+  enabled             = true
+  is_ipv6_enabled     = true
+  comment             = "CloudFront distribution for scraper bucket"
+  default_root_object = "dashboard.html"
+
+  aliases = ["www.${var.domain_name}", var.domain_name]
+
+  default_cache_behavior {
+    allowed_methods  = ["GET", "HEAD"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = "S3-${data.aws_s3_bucket.scraper_bucket.id}"
+
+    forwarded_values {
+      query_string = false
+      cookies {
+        forward = "none"
+      }
+    }
+
+    viewer_protocol_policy = "redirect-to-https"
+    min_ttl                = 0
+    default_ttl            = 600
+    max_ttl                = 86400
+
+   
+  }
+
+  price_class = "PriceClass_100"
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "whitelist"
+      locations        = ["MX", "BE"]
+    }
+  }
+
+  viewer_certificate {
+    acm_certificate_arn      = data.aws_acm_certificate.scraper_cert.arn
+    ssl_support_method       = "sni-only"
+    minimum_protocol_version = "TLSv1.2_2021"
+  }
+
+  tags = module.label.tags
+}
