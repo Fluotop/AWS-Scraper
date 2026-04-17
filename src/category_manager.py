@@ -5,7 +5,7 @@ Usage from project root:
     python scraper/category_manager.py
 """
 
-from scraper.scrapers.category_manager import main
+from src.scraper.scrapers.category_manager import main
 
 if __name__ == "__main__":
     main()
