@@ -87,22 +87,30 @@ class ChedrauiScraper(BaseScraper):
         region_id = self._get_region_id()
         print(f"Region ID: {region_id}")
 
-        # Get vtex_session/vtex_segment cookies via a headless browser with geolocation
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            ctx = browser.new_context(
-                geolocation={"latitude": self.LATITUDE, "longitude": self.LONGITUDE},
-                permissions=["geolocation"],
-            )
-            page = ctx.new_page()
-            page.goto("https://www.chedraui.com.mx", timeout=120000, wait_until="domcontentloaded")
-            page.wait_for_timeout(8000)
-            cookies = {c["name"]: c["value"] for c in ctx.cookies()}
-            browser.close()
+        # Get vtex_session/vtex_segment cookies via a headless browser with geolocation.
+        # Retry up to 3 times because the cookie is occasionally not set in time.
+        max_attempts = 3
+        cookies = {}
+        for attempt in range(1, max_attempts + 1):
+            wait_ms = 8000 + (attempt - 1) * 4000
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                ctx = browser.new_context(
+                    geolocation={"latitude": self.LATITUDE, "longitude": self.LONGITUDE},
+                    permissions=["geolocation"],
+                )
+                page = ctx.new_page()
+                page.goto("https://www.chedraui.com.mx", timeout=120000, wait_until="domcontentloaded")
+                page.wait_for_timeout(wait_ms)
+                cookies = {c["name"]: c["value"] for c in ctx.cookies()}
+                browser.close()
+            if "vtex_segment" in cookies and "vtex_session" in cookies:
+                break
+            print(f"[chedraui] vtex_segment cookie missing on attempt {attempt}/{max_attempts}; retrying...")
 
         # Patch vtex_segment with the correct regionId and location facets, then re-encode
         if "vtex_segment" not in cookies:
-            raise RuntimeError(f"vtex_segment cookie not found. Available cookies: {list(cookies.keys())}")
+            raise RuntimeError(f"vtex_segment cookie not found after {max_attempts} attempts. Available cookies: {list(cookies.keys())}")
         seg = json.loads(base64.b64decode(cookies["vtex_segment"] + "=="))
         seg["regionId"] = region_id
         seg["facets"] = f"country=MEX;coordinates={self.LONGITUDE},{self.LATITUDE};"
