@@ -223,16 +223,33 @@ class BaseScraper(ABC):
         self.storage.create_products_table()
         
         paths = self.get_paths(category_filter=category_filter, start_from=start_from)
+        buffer = []
+        current_maincat = None
         
+        def flush():
+            if buffer and current_maincat is not None:
+                self.storage.insert_products(buffer, maincat_id=current_maincat)
+
+                
         for idx, path in enumerate(paths, 1):
             print(f"\n[{idx}/{len(paths)}] Scraping: {path}")
+            maincat_id = path.strip("/").split("/")[0]
+
+            if current_maincat is not None and maincat_id != current_maincat:
+                flush()
+                buffer = []
+
+            current_maincat = maincat_id
+
             try:
                 products_data = self.scrape_category(path)
-                category_id = path.strip("/").split("/")[-1]
-                self.storage.insert_products(products_data, category_id=category_id)
+                if products_data:
+                    buffer.extend(products_data)
             except Exception as exc:
                 print(f"[{self.store_name}] ERROR on {path}: {exc}")
                 traceback.print_exc()
             self.polite_sleep()
-        
+
+        # Final flush for the last maincat
+        flush()
         print("\nScraping completed!")

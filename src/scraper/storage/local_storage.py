@@ -34,7 +34,7 @@ class LocalStorage(BaseStorage):
             )
             """)
 
-    def insert_products(self, products_data, category_id=None):
+    def insert_products(self, products_data, maincat_id=None):
 
         if not products_data:
             return

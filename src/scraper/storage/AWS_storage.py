@@ -22,7 +22,7 @@ class AWSStorage(BaseStorage):
     def create_products_table(self):
         pass
 
-    def insert_products(self, products_data, category_id=None):
+    def insert_products(self, products_data, maincat_id=None):
 
         if not products_data:
             return
@@ -43,7 +43,7 @@ class AWSStorage(BaseStorage):
         )
 
         store = df["store"][0]
-        cat_segment = f"catid={category_id}/"
+        cat_segment = f"maincatid={maincat_id}/"
 
         key = (
             f"{self.prefix}/"
