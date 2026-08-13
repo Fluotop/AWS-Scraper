@@ -1,5 +1,3 @@
-<img width="1884" height="933" alt="chedraui products" src="https://github.com/user-attachments/assets/35dc307c-5685-4767-8b52-fdece6abd637" />
-<img width="1884" height="933" alt="chedraui products" src="https://github.com/user-attachments/assets/9a64a34e-b2ce-4dc2-92d0-5aa1de24896a" />
 # Supermarket Scraper
 ## Purpose
 The purpose of this project is to track price data of products offered in the 2 supermarkets (Chedraui Kabeh and Superaki) closest to my home during my 1 year stay in Mexico. The goal was to learn DevOps using AWS, Terraform and github actions.
