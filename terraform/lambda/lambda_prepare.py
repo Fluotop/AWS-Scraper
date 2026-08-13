@@ -92,25 +92,56 @@ WHERE scrape_date = (SELECT MAX(scrape_date) FROM last_two_dates)
 
 def lambda_handler(event, context):
     print("Rebuilding price_changes …")
-
     # Drop all existing Glue partitions, then re-add only what's in S3
-    #paginator = glue.get_paginator("get_partitions")
-    #existing = []
-    #for page in paginator.paginate(DatabaseName=DATABASE, TableName="products"):
-    #    existing.extend(page["Partitions"])
+    def rebuild_glue_catalog():
+        print("Removing all existing Glue partitions...")
 
-    #if existing:
-    #    glue.batch_delete_partition(
-    #        DatabaseName=DATABASE,
-    #        TableName="products",
-    #        PartitionsToDelete=[{"Values": p["Values"]} for p in existing]
-    #    )
-    #    print(f"Dropped {len(existing)} stale partitions")
+        paginator = glue.get_paginator("get_partitions")
+        existing = []
+
+        for page in paginator.paginate(
+            DatabaseName=DATABASE,
+            TableName="products"
+        ):
+            existing.extend(page["Partitions"])
+
+        print(f"Found {len(existing)} existing Glue partitions")
+
+        # Glue allows max 25 partitions per BatchDeletePartition request
+        for i in range(0, len(existing), 25):
+            batch = existing[i:i + 25]
+
+            glue.batch_delete_partition(
+                DatabaseName=DATABASE,
+                TableName="products",
+                PartitionsToDelete=[
+                    {"Values": p["Values"]}
+                    for p in batch
+                ]
+            )
+
+            print(
+                f"Deleted partitions {i + 1}-"
+                f"{i + len(batch)} of {len(existing)}"
+            )
+
+        print("All existing Glue partitions removed")
+
+    # Rediscover everything currently present in S3
+    rebuild_glue_catalog()
+    print("Running MSCK REPAIR TABLE products...")
 
     run("MSCK REPAIR TABLE products;")
+    
+    print("Glue catalog rediscovered successfully")
+
+    run("MSCK REPAIR TABLE products;")
+    print("Repaired products table partitions")
     run(SQL_DROP_PRICE_CHANGES)
+    print("Dropped price_changes table")
     delete_s3_prefix("bdm060897-prod", "scraper/athena-results/price_changes/")
     run(SQL_CREATE_PRICE_CHANGES)
+    print("Created price_changes table")
     delete_s3_prefix("bdm060897-prod", "scraper/athena-results/list_price_increases/")
     delete_s3_prefix("bdm060897-prod", "scraper/athena-results/list_price_decreases/")
     delete_s3_prefix("bdm060897-prod", "scraper/athena-results/discounts/")
