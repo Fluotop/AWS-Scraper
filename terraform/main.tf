@@ -192,7 +192,7 @@ resource "aws_iam_role_policy" "ec2_terminate_policy" {
         Action = [
           "s3:PutObject"
         ]
-        Resource = "arn:aws:s3:::bdm060897-prod/*"
+        Resource = "arn:aws:s3:::${var.bucket_name}/*"
       }
     ]
   })
@@ -244,7 +244,7 @@ resource "aws_glue_catalog_table" "products" {
   }
 
   storage_descriptor {
-    location      = "s3://bdm060897-prod/scraper/products/"
+    location      = "s3://${var.bucket_name}/scraper/products/"
     input_format  = "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat"
     output_format = "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat"
 
@@ -324,7 +324,7 @@ resource "aws_glue_catalog_table" "products" {
   }
 
   partition_keys {
-    name = "catid"
+    name = "maincatid"
     type = "string"
   }
 }
@@ -428,7 +428,7 @@ resource "aws_lambda_function" "athena_prepare_tables" {
   environment {
     variables = {
       DATABASE        = "products_db"
-      OUTPUT_LOCATION = "s3://bdm060897-prod/scraper/athena-results/"
+      OUTPUT_LOCATION = "s3://${var.bucket_name}/scraper/athena-results/"
     }
   }
 
@@ -447,7 +447,7 @@ data "archive_file" "history_layer_zip" {
 }
 
 resource "aws_s3_object" "history_layer_zip" {
-  bucket = "bdm060897-prod"
+  bucket = var.bucket_name
   key    = "lambda-layers/history_layer.zip"
   source = data.archive_file.history_layer_zip.output_path
   etag   = filemd5(data.archive_file.history_layer_zip.output_path)
@@ -564,7 +564,7 @@ resource "aws_lambda_function" "dashboard_aws" {
 
   environment {
     variables = {
-      BUCKET         = "bdm060897-prod"
+      BUCKET         = var.bucket_name
       RESULTS_PREFIX = "scraper/athena-results"
       DASHBOARD_KEY  = "scraper/dashboard/dashboard.html"
     }
@@ -576,7 +576,7 @@ resource "aws_lambda_function" "dashboard_aws" {
 # ----------------------------
 
 resource "aws_s3_bucket_notification" "bucket_notifications" {
-  bucket      = "bdm060897-prod"
+  bucket      = var.bucket_name
   eventbridge = true
 }
 
@@ -588,7 +588,7 @@ resource "aws_cloudwatch_event_rule" "s3_success" {
     detail-type = ["Object Created"],
     detail = {
       bucket = {
-        name = ["bdm060897-prod"]
+        name = [var.bucket_name]
       },
       object = {
         key = [{
@@ -733,7 +733,7 @@ resource "aws_sfn_state_machine" "scraper_dashboard_state_machine" {
                 Parameters = {
                   QueryString           = file("${path.module}/lambda/sql/list_price_increases.sql")
                   QueryExecutionContext = { Database = "products_db" }
-                  ResultConfiguration   = { OutputLocation = "s3://bdm060897-prod/scraper/athena-results/list_price_increases/" }
+                  ResultConfiguration   = { OutputLocation = "s3://${var.bucket_name}/scraper/athena-results/list_price_increases/" }
                 }
                 Next = "list_price_increases_history"
               },
@@ -753,7 +753,7 @@ resource "aws_sfn_state_machine" "scraper_dashboard_state_machine" {
                 Parameters = {
                   QueryString           = file("${path.module}/lambda/sql/list_price_decreases.sql")
                   QueryExecutionContext = { Database = "products_db" }
-                  ResultConfiguration   = { OutputLocation = "s3://bdm060897-prod/scraper/athena-results/list_price_decreases/" }
+                  ResultConfiguration   = { OutputLocation = "s3://${var.bucket_name}/scraper/athena-results/list_price_decreases/" }
                 }
                 Next = "list_price_descreases_history"
               },
@@ -773,7 +773,7 @@ resource "aws_sfn_state_machine" "scraper_dashboard_state_machine" {
                 Parameters = {
                   QueryString           = file("${path.module}/lambda/sql/discounts.sql")
                   QueryExecutionContext = { Database = "products_db" }
-                  ResultConfiguration   = { OutputLocation = "s3://bdm060897-prod/scraper/athena-results/discounts/" }
+                  ResultConfiguration   = { OutputLocation = "s3://${var.bucket_name}/scraper/athena-results/discounts/" }
                 }
                 Next = "discounts_history"
               },
@@ -793,7 +793,7 @@ resource "aws_sfn_state_machine" "scraper_dashboard_state_machine" {
                 Parameters = {
                   QueryString           = file("${path.module}/lambda/sql/avg_deals_30d.sql")
                   QueryExecutionContext = { Database = "products_db" }
-                  ResultConfiguration   = { OutputLocation = "s3://bdm060897-prod/scraper/athena-results/avg_deals_30d/" }
+                  ResultConfiguration   = { OutputLocation = "s3://${var.bucket_name}/scraper/athena-results/avg_deals_30d/" }
                 }
                 Next = "avg_deals_30d_history"
               },
@@ -813,112 +813,5 @@ resource "aws_sfn_state_machine" "scraper_dashboard_state_machine" {
       }
     }
   })
-  tags = module.label.tags
-}
-
-# ----------------------------
-# Cloudfront
-# ----------------------------
-
-data "aws_s3_bucket" "scraper_bucket" {
-  bucket = var.bucket_name
-}
-
-resource "aws_s3_bucket_policy" "bdm060897_policy" {
-  bucket = data.aws_s3_bucket.scraper_bucket.id
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "cloudfront.amazonaws.com"
-        }
-        Action   = "s3:GetObject"
-        Resource = "${data.aws_s3_bucket.scraper_bucket.arn}/scraper/dashboard/*"
-        Condition = {
-          StringEquals = {
-            "AWS:SourceArn" = aws_cloudfront_distribution.scraper_distribution.arn
-          }
-        }
-      }
-    ]
-  })
-}
-
-resource "aws_s3_bucket_public_access_block" "scraper_bucket" {
-  bucket                  = data.aws_s3_bucket.scraper_bucket.id
-  block_public_acls       = true
-  block_public_policy     = false
-  ignore_public_acls      = true
-  restrict_public_buckets = false
-}
-
-resource "aws_cloudfront_origin_access_control" "oac" {
-  name                              = "OAC_for_S3_scraper_bucket"
-  description                       = "Origin Access Control for S3 bucket access used in CV project"
-  origin_access_control_origin_type = "s3"
-  signing_behavior                  = "always"
-  signing_protocol                  = "sigv4"
-}
-
-
-# Imported certificate for domain in us-east-1
-data "aws_acm_certificate" "scraper_cert" {
-  domain      = var.certificate_domain
-  statuses    = ["ISSUED"]
-  most_recent = true
-}
-
-resource "aws_cloudfront_distribution" "scraper_distribution" {
-  origin {
-    domain_name              = data.aws_s3_bucket.scraper_bucket.bucket_regional_domain_name
-    origin_id                = "S3-${data.aws_s3_bucket.scraper_bucket.id}"
-    origin_access_control_id = aws_cloudfront_origin_access_control.oac.id
-    origin_path              = "/scraper/dashboard"
-  }
-
-  enabled             = true
-  is_ipv6_enabled     = true
-  comment             = "CloudFront distribution for scraper bucket"
-  default_root_object = "dashboard.html"
-
-  aliases = ["www.${var.domain_name}", var.domain_name]
-
-  default_cache_behavior {
-    allowed_methods  = ["GET", "HEAD"]
-    cached_methods   = ["GET", "HEAD"]
-    target_origin_id = "S3-${data.aws_s3_bucket.scraper_bucket.id}"
-
-    forwarded_values {
-      query_string = false
-      cookies {
-        forward = "none"
-      }
-    }
-
-    viewer_protocol_policy = "redirect-to-https"
-    min_ttl                = 0
-    default_ttl            = 600
-    max_ttl                = 86400
-
-   
-  }
-
-  price_class = "PriceClass_100"
-
-  restrictions {
-    geo_restriction {
-      restriction_type = "whitelist"
-      locations        = ["MX", "BE"]
-    }
-  }
-
-  viewer_certificate {
-    acm_certificate_arn      = data.aws_acm_certificate.scraper_cert.arn
-    ssl_support_method       = "sni-only"
-    minimum_protocol_version = "TLSv1.2_2021"
-  }
-
   tags = module.label.tags
 }

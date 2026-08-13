@@ -29,8 +29,8 @@ SNAPSHOT = {
     "name":                   "STILA QUAKER BARRAS DE AVENA FIT FRUTOS ROJOS",
     "brand":                  "STILA",
     "maincat":                "Barras de cereales",
-    "cat":                    "Abarrotes",
-    "subcat":                 None,          # only 2 categories in response
+    "cat":                    None,          # only 1 category in response to be updated to other product
+    "subcat":                 None,          # only 1 category in response
     "catid":                  110101,
     # partial prefixes
     "image_url_prefix":       "https://cdn-superaki.aktiosdigitalservices.com/tol/superaki/media/product/img/300x300/",

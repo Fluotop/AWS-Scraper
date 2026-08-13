@@ -1,6 +1,5 @@
 """AWS Athena tests using moto to mock all AWS services.
 
-No real credentials are needed. The moto mock handles all boto3 calls.
 SQL correctness is validated by running the same .sql files through DuckDB
 (same synthetic data as test_queries_local.py), since moto's Athena does not
 execute real queries. TestAthenaInfrastructure verifies the boto3 API paths.
