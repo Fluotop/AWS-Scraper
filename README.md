@@ -1,3 +1,5 @@
+<img width="1884" height="933" alt="chedraui products" src="https://github.com/user-attachments/assets/35dc307c-5685-4767-8b52-fdece6abd637" />
+<img width="1884" height="933" alt="chedraui products" src="https://github.com/user-attachments/assets/9a64a34e-b2ce-4dc2-92d0-5aa1de24896a" />
 # Supermarket Scraper
 ## Purpose
 The purpose of this project is to track price data of products offered in the 2 supermarkets (Chedraui Kabeh and Superaki) closest to my home during my 1 year stay in Mexico. The goal was to learn DevOps using AWS, Terraform and github actions.
@@ -28,8 +30,10 @@ Fetches the available product categories from Chedraui and Superaki. Can store c
 Store independent script that sets default values. It creates a chromium session fetches the available categories per store. It fetches the URLs using exponential backoff if needed and can handle some error codes returned from Chedraui or Superaki. Failed URLs are skipped. 
 ## Chedraui Scraper
 Sets parameters for specific store and fetch its region ID using playwright package. Setup a browser session using the region ID. Each subcategory is scraped in batches of 20 products matching what’s displayed on the website and in 5 sec intervals. All batches pass a checkout simulation which is needed to get accurate prices for the specific store. The returned JSON is parsed and useful info is put in tuples.
+<img width="1884" height="933" alt="chedraui products" src="https://github.com/user-attachments/assets/e76bef2a-5694-47dc-8bf2-e72adf997b52" />
 ## SuperAki scraper
 Similar as above but can be scraped directly without needing playwright. Pages directly provide correct info that can be stored.
+<img width="1464" height="912" alt="image" src="https://github.com/user-attachments/assets/36086428-c6ce-4255-b036-73bfbe0be4e0" />
 # Storage
 Tuples can be stored locally or on AWS by changing the settings in the main file.
 ## Local storage
@@ -84,6 +88,8 @@ All AWS resources used are coded in Terraform cloud. A module was created for ta
 Deployment is not done manually but is automated through github actions (.github/workflows/deploy.yaml). The pipeline runs all tests upon deploy.
 ## Monitoring
 AWS sends an email if the scraper script would fail to prevent EC2 instances to hang forever.
+
+
 
 
 
