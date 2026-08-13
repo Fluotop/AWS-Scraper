@@ -4,6 +4,11 @@ The purpose of this project is to track price data of products offered in the 2 
 # Infrastructure
 Every Tuesday when both stores offer extra discounts on fruit and vegetables a eventbridge schedule will trigger a lambda function which creates an EC2 instance that fetches the scraper scripts from Github. The scraper script dumps its data as parquet files in an S3 bucket structured by store, date and product category. After running the script the EC2 instance will either _SUCCESS or _FAILURE in the S3 bucket after which it auto terminates. An eventbridge rule scans the bucket for the message and on success will start a step function workflow or send an email on failure. 
 Step function starts with a lambda that updates the glue catalog with the newly scraped data. On success 4 athena queries are run. Each query creates this weeks data needed for each page on the dashboard. After lambda aggregates the current weeks result to the historic results. At the end the html containing the dashboard is created and put in an S3 bucket. The html is then used in the personal website project.
+
+
+<img width="761" height="877" alt="Untitled Diagram" src="https://github.com/user-attachments/assets/5114e70e-445c-45a5-b980-b91d3b43ac8d" />
+
+
 # Lambda code
 ## Scraper Launcher
 -	Initialize EC2 using Boto3 and direct all logs to central log file
@@ -89,4 +94,3 @@ AWS sends an email if the scraper script would fail to prevent EC2 instances to 
 
 
 
-<img width="761" height="877" alt="Untitled Diagram" src="https://github.com/user-attachments/assets/5114e70e-445c-45a5-b980-b91d3b43ac8d" />
